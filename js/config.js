@@ -9,7 +9,7 @@ SM.Config = Object.freeze({
   // Estadísticas con GoatCounter (gratis, sin cookies; ver js/stats.js). Pon aquí el código
   // de tu cuenta: si tu panel es https://pokesplendor.goatcounter.com, el código es 'pokesplendor'.
   // Vacío = no se cuenta nada. Abriendo el juego con doble clic tampoco se cuenta.
-  GOATCOUNTER_CODE: '',
+  GOATCOUNTER_CODE: 'noix',
 
   // Las cinco gemas normales y el comodín.
   GEMS: ['ruby', 'sapphire', 'emerald', 'topaz', 'onyx'],
