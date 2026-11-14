@@ -41,14 +41,24 @@ SM.Net = (function () {
       this.conn = null;          // invitado: conexión con el anfitrión
       this.guests = new Map();   // anfitrión: id -> conexión
       this.maxGuests = 1;
+      this.keepAlive = false;   // anfitrión: true con la partida en curso
       this.done = false;
     }
 
-    host(maxGuests = 1, tries = 0) {
+    // code: para recuperar una sala (el anfitrión volvió a abrir el juego). Si el servidor
+    // todavía tiene ese código ocupado por la conexión anterior, se reintenta un rato.
+    host(maxGuests = 1, code = null, tries = 0) {
       this.maxGuests = maxGuests;
-      const code = randomCode();
-      const peer = this.peer = new window.Peer(PREFIX + code);
-      peer.on('open', () => this.h.onReady && this.h.onReady(code));
+      const fixed = !!code;
+      const id = code || randomCode();
+      const peer = this.peer = new window.Peer(PREFIX + id);
+      peer.on('open', () => { if (!this.done && this.h.onReady) this.h.onReady(id); });
+      // Si se corta la conexión con el servidor de emparejamiento, se reconecta para que
+      // los invitados que se cayeron puedan volver a encontrar la sala.
+      peer.on('disconnected', () => {
+        if (this.done || peer !== this.peer) return;
+        setTimeout(() => { try { if (!this.done && peer.disconnected && !peer.destroyed) peer.reconnect(); } catch (e) { /* reintenta más tarde */ } }, 2000);
+      });
       peer.on('connection', conn => {
         if (this.done || this.guests.size >= this.maxGuests) { conn.on('open', () => conn.close()); return; } // sala llena
         this.guests.set(conn.peer, conn);
@@ -63,9 +73,15 @@ SM.Net = (function () {
         conn.on('error', left);
       });
       peer.on('error', err => {
-        if (err.type === 'unavailable-id' && tries < 3) { peer.destroy(); this.host(maxGuests, tries + 1); return; }
-        // Con invitados conectados, un fallo del servidor de emparejamiento no corta la partida.
-        if (this.guests.size && err.type !== 'peer-unavailable') return;
+        if (this.done || peer !== this.peer) return;
+        if (err.type === 'unavailable-id') {
+          peer.destroy();
+          if (!fixed && tries < 3) { this.host(maxGuests, null, tries + 1); return; }
+          if (fixed && tries < 12) { setTimeout(() => { if (!this.done) this.host(maxGuests, code, tries + 1); }, 2500); return; }
+        }
+        // Con la partida en curso (o con invitados), un fallo del servidor de emparejamiento
+        // no la corta: las conexiones ya hechas siguen funcionando.
+        if ((this.keepAlive || this.guests.size) && err.type !== 'unavailable-id') return;
         this.fail(err);
       });
     }

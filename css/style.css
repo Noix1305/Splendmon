@@ -3141,3 +3141,30 @@ html:is(
 .legal-body a {
   color: var(--accent);
 }
+
+/* Aviso para continuar una partida guardada o volver a una sala */
+.resume-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  box-shadow: var(--shadow);
+}
+.resume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px 10px;
+  flex-wrap: wrap;
+}
+.resume-bar p {
+  margin: 0;
+  flex: 1 1 260px;
+  font-weight: 600;
+}
+.away-badge {
+  background: var(--warn);
+}

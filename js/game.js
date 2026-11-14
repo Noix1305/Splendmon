@@ -138,6 +138,29 @@ SM.Game = class Game {
     this.emit();
   }
 
+  // ---------- Guardar y continuar una partida
+  // Igual que snapshot(), pero con lo oculto (el orden de los mazos y de los objetos),
+  // para poder seguir jugando exactamente donde se quedó.
+
+  saveState() {
+    const s = this.snapshot();
+    s.deckOrder = {};
+    SM.Config.TIERS.forEach(t => { s.deckOrder[t] = this.decks[t].map(c => (c ? c.uid : null)); });
+    s.itemDeckFull = this.itemDeck.slice();
+    s.itemDiscardFull = this.itemDiscard.slice();
+    return s;
+  }
+
+  static restore(cards, saved) {
+    const g = Game.fromSnapshot(cards, saved);
+    SM.Config.TIERS.forEach(t => {
+      g.decks[t] = (saved.deckOrder[t] || []).map(uid => g.cards.get(uid)).filter(Boolean);
+    });
+    g.itemDeck = (saved.itemDeckFull || []).slice();
+    g.itemDiscard = (saved.itemDiscardFull || []).slice();
+    return g;
+  }
+
   // Cada línea guarda el texto con el nombre (lo que ven los demás) y, si habla de un
   // jugador, quién es y cómo se lee para ese jugador ("Tomas…" en vez de "Ana toma…").
   addLog(text, who = null, you = null) {
