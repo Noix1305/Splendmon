@@ -1729,9 +1729,21 @@
       const r1 = el('span', 'ts-row'); r1.append(el('b', null, 'Aa'), el('span', 'ts-chip'));
       const r2 = el('span', 'ts-row'); r2.append(el('span', 'ts-accent'), el('span', 'ts-ok'), el('span', 'ts-chip'));
       sw.append(r1, r2);
-      b.append(sw, el('span', null, t.label));
+      if (t.num) {
+        const img = new Image();
+        img.className = 'ts-mon';
+        img.alt = '';
+        img.src = `img/pokemon/thumbs/${t.num}.png`;
+        img.onerror = () => img.remove();
+        sw.append(img);
+      }
+      const name = el('span', 'theme-name');
+      name.append(el('span', null, t.label));
+      if (t.hint) name.append(el('small', null, t.hint));
+      b.append(sw, name);
+      b.title = t.hint ? `${t.label}: ${t.hint}` : t.label;
       picker.append(b);
-      const opt = el('option', null, 'Tema: ' + t.label);
+      const opt = el('option', null, 'Tema: ' + t.label + (t.hint ? ` (${t.hint})` : ''));
       opt.value = t.id;
       select.append(opt);
     });

@@ -73,15 +73,17 @@ SM.Config = Object.freeze({
   // Temas de la interfaz. El id corresponde a [data-theme="<id>"] en css/style.css.
   // "auto" sigue el modo claro/oscuro del sistema.
   THEMES: [
-    { id: 'auto',       label: 'Automático' },
-    { id: 'light',      label: 'Claro' },
-    { id: 'dark',       label: 'Oscuro' },
-    { id: 'pokedex',    label: 'Pokédex' },
-    { id: 'gengar',     label: 'Gengar' },
-    { id: 'forest',     label: 'Bosque' },
-    { id: 'ocean',      label: 'Océano' },
-    { id: 'glass',      label: 'Cristal' },
-    { id: 'glass-dark', label: 'Cristal oscuro' },
+    // label: el Pokémon cuyos colores representa · hint: cómo es el tema · num: su sprite.
+    // El id no cambia (es el que queda guardado en cada navegador).
+    { id: 'auto',       label: 'Ditto',     hint: 'automático',     num: '132' },
+    { id: 'light',      label: 'Eevee',     hint: 'claro',          num: '133' },
+    { id: 'dark',       label: 'Arcanine',  hint: 'oscuro',         num: '059' },
+    { id: 'pokedex',    label: 'Voltorb',   hint: 'rojo y blanco',  num: '100' },
+    { id: 'gengar',     label: 'Gengar',    hint: 'morado',         num: '094' },
+    { id: 'forest',     label: 'Bulbasaur', hint: 'verde',          num: '001' },
+    { id: 'ocean',      label: 'Vaporeon',  hint: 'azul profundo',  num: '134' },
+    { id: 'glass',      label: 'Articuno',  hint: 'cristal claro',  num: '144' },
+    { id: 'glass-dark', label: 'Lapras',    hint: 'cristal oscuro', num: '131' },
   ],
 
   // Fondo para quien todavía no eligió ninguno.
