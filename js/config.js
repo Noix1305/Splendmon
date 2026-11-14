@@ -4,7 +4,7 @@ window.SM = window.SM || {};
 SM.Config = Object.freeze({
   // Versión del juego: se muestra en el pie de página. Súbela al publicar cambios
   // (1.0.1 arreglos, 1.1.0 algo nuevo, 2.0.0 cambios grandes).
-  VERSION: '1.0.0',
+  VERSION: '1.0.3',
 
   // Estadísticas con GoatCounter (gratis, sin cookies; ver js/stats.js). Pon aquí el código
   // de tu cuenta: si tu panel es https://pokesplendor.goatcounter.com, el código es 'pokesplendor'.
@@ -73,15 +73,22 @@ SM.Config = Object.freeze({
   // Temas de la interfaz. El id corresponde a [data-theme="<id>"] en css/style.css.
   // "auto" sigue el modo claro/oscuro del sistema.
   THEMES: [
-    { id: 'auto',       label: 'Automático' },
-    { id: 'light',      label: 'Claro' },
-    { id: 'dark',       label: 'Oscuro' },
-    { id: 'pokedex',    label: 'Pokédex' },
-    { id: 'gengar',     label: 'Gengar' },
-    { id: 'forest',     label: 'Bosque' },
-    { id: 'ocean',      label: 'Océano' },
-    { id: 'glass',      label: 'Cristal' },
-    { id: 'glass-dark', label: 'Cristal oscuro' },
+    // label: el Pokémon cuyos colores representa · hint: cómo es el tema · num: su sprite.
+    // El id no cambia (es el que queda guardado en cada navegador).
+    { id: 'auto',       label: 'Ditto',     hint: 'automático',     num: '132' },
+    { id: 'light',      label: 'Eevee',     hint: 'claro',          num: '133' },
+    { id: 'dark',       label: 'Arbok',     hint: 'oscuro',         num: '024' },
+    { id: 'pokedex',    label: 'Voltorb',   hint: 'rojo y blanco',  num: '100' },
+    { id: 'gengar',     label: 'Gengar',    hint: 'morado',         num: '094' },
+    // Los tres iniciales de Kanto, juntos.
+    { id: 'fire',       label: 'Charmander', hint: 'naranja y amarillo', num: '004' },
+    { id: 'forest',     label: 'Bulbasaur', hint: 'verde',          num: '001' },
+    { id: 'glass',      label: 'Squirtle',  hint: 'cristal claro',  num: '007' },
+    // Las tres aves legendarias.
+    { id: 'ocean',      label: 'Articuno',  hint: 'azul profundo',  num: '144' },
+    { id: 'zapdos',     label: 'Zapdos',    hint: 'amarillo eléctrico', num: '145' },
+    { id: 'moltres',    label: 'Moltres',   hint: 'fuego oscuro',   num: '146' },
+    { id: 'glass-dark', label: 'Lapras',    hint: 'cristal oscuro', num: '131' },
   ],
 
   // Fondo para quien todavía no eligió ninguno.

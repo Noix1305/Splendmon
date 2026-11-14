@@ -11,6 +11,10 @@
   const state = {
     cards: null, typeGroups: C.DEFAULT_TYPE_GEMS, setup: null, teams: false, game: null, selection: [], aiTimer: null,
     net: null, role: null, local: 0, lobby: null, view: null,
+    // away: asientos de jugadores en red que se desconectaron (la partida los espera).
+    // session (invitado): { code, token, name } para volver a entrar a la sala.
+    // reconnect (invitado): reintentos en curso tras perder la conexión.
+    away: [], session: null, reconnect: null, devMode: false,
     seatPrefs: [],
     catalogTier: 'all',
     testMode: false,
@@ -269,18 +273,20 @@
     $('#join-code').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
     $('#quit').addEventListener('click', () => {
       const msg = state.role ? '¿Salir de la partida? Se cortará la conexión con los demás jugadores.' : '¿Salir de la partida?';
-      if (confirm(msg)) backToSetup();
+      if (confirm(msg)) { forgetSaved(); backToSetup(); }
     });
 
     // Modo prueba: oculto para los jugadores. Aparece al abrir el juego en el propio PC
     // (doble clic, Jugar.bat o localhost) o agregando ?dev a la dirección.
     const devMode = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
       || new URLSearchParams(location.search).has('dev');
+    state.devMode = devMode;
     $('#test-mode-row').hidden = !devMode;
     if (!devMode) $('#test-mode').checked = false;
 
     initPanelDialogs();
     initFooter();
+    renderResume();
     initCatalog();
     initThemes();
     initBackgrounds();
@@ -560,7 +566,8 @@
     const cfg = readSetup();
     if (cfg.seats.some(s => s.kind === 'online')) { hostRoom(cfg); return; }
     leaveNetwork();
-    state.testMode = $('#test-mode').checked;
+    storeDel(SESSION_KEY);
+    state.testMode = state.devMode && $('#test-mode').checked;
     state.setup = cfg.seats.map(s => ({ name: s.name, ai: s.ai }));
     state.teams = cfg.teams;
     newGame();
@@ -571,15 +578,21 @@
   function newGame() {
     const game = new SM.Game(state.cards, state.setup, { teams: state.teams });
     if (state.role === 'host') {
-      const link = state.net;
-      game.onChange(() => link.send({ t: 'state', s: game.snapshot() }));
+      attachHostGame(game);
       const snap = game.snapshot();
-      state.lobby.seatOf.forEach((seat, id) => link.send({ t: 'start', cards: state.cards, s: snap, seat }, id));
+      state.lobby.seatOf.forEach((seat, id) => state.net.send({ t: 'start', cards: state.cards, s: snap, seat, away: state.away }, id));
     }
     SM.Stats.gameStarted({
       players: state.setup.length, teams: game.teams, online: state.role === 'host', ai: state.setup.some(p => p.ai),
     });
     showGame(game);
+  }
+
+  // Anfitrión: cada cambio de la partida se envía a los invitados conectados.
+  function attachHostGame(game) {
+    const link = state.net;
+    link.keepAlive = true;
+    game.onChange(() => link.send({ t: 'state', s: game.snapshot() }));
   }
 
   function showGame(game) {
@@ -590,10 +603,11 @@
     if ($('#card-dialog').open) closeDialog();
     ['#catalog-dialog', '#join-dialog'].forEach(sel => { if ($(sel).open) $(sel).close(); });
     state.game = game;
-    game.onChange(() => { state.selection = []; state.bike = null; render(); });
+    game.onChange(() => { state.selection = []; state.bike = null; render(); saveSoon(); });
     $('#setup').hidden = true;
     $('#game').hidden = false;
     render();
+    saveSoon();
   }
 
   function backToSetup() {
@@ -607,6 +621,110 @@
     $('#game').hidden = true;
     $('#game-over').hidden = true;
     $('#setup').hidden = false;
+    renderResume();
+  }
+
+  // ---------- Guardar la partida para continuarla después
+  // La partida en curso se guarda sola en este navegador después de cada jugada. Al volver
+  // a abrir el juego aparece «Continuar». Se borra al terminar la partida o al salir con «Salir».
+  // En red, el invitado no guarda la partida (la tiene el anfitrión), solo cómo volver a la sala.
+
+  const SAVE_KEY = 'splendmon.save';
+  const SESSION_KEY = 'splendmon.session';
+  const SESSION_MAX_AGE = 6 * 60 * 60 * 1000; // un intento de volver a la sala vale por 6 horas
+
+  function storeGet(key) {
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
+  }
+  function storeSet(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* sin almacenamiento o lleno */ }
+  }
+  function storeDel(key) {
+    try { localStorage.removeItem(key); } catch (e) { /* sin almacenamiento */ }
+  }
+
+  let saveTimer = null;
+  function saveSoon() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveGame, 250);
+  }
+
+  function saveGame() {
+    const g = state.game;
+    if (!g) return;
+    if (state.role === 'guest') {
+      if (g.phase === 'over') storeDel(SESSION_KEY);
+      return;
+    }
+    if (g.phase === 'over') { storeDel(SAVE_KEY); return; }
+    const lobby = state.lobby;
+    storeSet(SAVE_KEY, {
+      v: 1, at: Date.now(), version: C.VERSION,
+      cards: state.cards, setup: state.setup, teams: state.teams, testMode: state.testMode,
+      game: g.saveState(),
+      net: state.role === 'host' && lobby ? { code: lobby.code, cfg: lobby.cfg, tokens: lobby.tokens } : null,
+    });
+  }
+
+  // Salir a propósito: ya no hay nada que continuar.
+  function forgetSaved() {
+    clearTimeout(saveTimer);
+    storeDel(SAVE_KEY);
+    storeDel(SESSION_KEY);
+  }
+
+  function ago(at) {
+    const min = Math.max(0, Math.round((Date.now() - at) / 60000));
+    if (min < 1) return 'hace un momento';
+    if (min < 60) return `hace ${min} min`;
+    const h = Math.round(min / 60);
+    return h < 24 ? `hace ${h} h` : `hace ${Math.round(h / 24)} día(s)`;
+  }
+
+  // Aviso en la pantalla inicial: continuar la partida guardada y/o volver a la sala.
+  function renderResume() {
+    const box = $('#resume');
+    box.textContent = '';
+    const save = storeGet(SAVE_KEY);
+    const session = storeGet(SESSION_KEY);
+    const row = (text, ...buttons) => {
+      const r = el('div', 'resume-row');
+      r.append(el('p', null, text), ...buttons);
+      box.append(r);
+    };
+    if (save && save.v === 1 && save.game) {
+      const n = save.setup.length;
+      const kind = [save.teams ? 'por equipos' : null, save.net ? 'en red' : null].filter(Boolean).join(', ');
+      row(`⏸ Tienes una partida sin terminar: ${n} jugadores${kind ? ', ' + kind : ''}, ronda ${save.game.round} (${ago(save.at)}).`,
+        button('Continuar', 'primary small', () => resumeGame(save)),
+        button('Descartar', 'secondary small', () => { storeDel(SAVE_KEY); renderResume(); }));
+    }
+    if (session && session.code && Date.now() - session.at < SESSION_MAX_AGE) {
+      row(`🔗 Estabas jugando en la sala ${session.code} (${ago(session.at)}).`,
+        button('Volver a la sala', 'primary small', () => rejoinRoom(session)),
+        button('Descartar', 'secondary small', () => { storeDel(SESSION_KEY); renderResume(); }));
+    }
+    box.hidden = !box.childElementCount;
+  }
+
+  function resumeGame(save) {
+    let game;
+    try {
+      game = SM.Game.restore(save.cards, save.game);
+    } catch (err) {
+      storeDel(SAVE_KEY);
+      renderResume();
+      alert('No se pudo recuperar la partida guardada.');
+      return;
+    }
+    state.cards = save.cards;
+    state.setup = save.setup;
+    state.teams = !!save.teams;
+    state.testMode = state.devMode && !!save.testMode;
+    $('#catalog-open').disabled = false;
+    if (save.net) { resumeHost(save, game); return; }
+    leaveNetwork();
+    showGame(game);
   }
 
   // ---------- Jugar en red
@@ -643,6 +761,12 @@
     return false;
   }
 
+  function randomToken() {
+    const a = new Uint8Array(12);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   // ---------- Sala en red: anfitrión
 
   // Asientos por internet que todavía no ocupa nadie.
@@ -654,7 +778,7 @@
 
   function lobbyStatus() {
     const lobby = state.lobby;
-    if (!lobby || !lobby.code) return;
+    if (!lobby || !lobby.code || state.game) return;
     const total = lobby.cfg.seats.filter(s => s.kind === 'online').length;
     const joined = lobby.seatOf.size;
     const names = [...lobby.seatOf.values()].map(i => lobby.cfg.seats[i].name);
@@ -666,40 +790,90 @@
     state.net.send({ t: 'lobby', joined, total, names });
   }
 
-  function hostRoom(cfg) {
-    if (!netAvailable('#host-status')) return;
-    leaveNetwork();
-    const total = cfg.seats.filter(s => s.kind === 'online').length;
+  function makeHostLink() {
     const link = new SM.Net.Link({
       onReady: code => {
         if (state.net !== link) return;
         state.lobby.code = code;
         lobbyStatus();
+        if (state.game) { render(); saveSoon(); }
       },
       onMessage: (msg, id) => hostMessage(link, msg, id),
       onGuestLeft: id => guestLeft(link, id),
       onError: text => connectionLost(link, text),
     });
+    return link;
+  }
+
+  function hostRoom(cfg) {
+    if (!netAvailable('#host-status')) return;
+    leaveNetwork();
+    storeDel(SESSION_KEY);
+    const total = cfg.seats.filter(s => s.kind === 'online').length;
+    const link = makeHostLink();
     state.net = link;
     state.role = 'host';
     state.local = 0;
-    state.lobby = { cfg, seatOf: new Map(), code: null };
+    state.lobby = { cfg, seatOf: new Map(), code: null, tokens: {}, away: new Set() };
     state.testMode = false;
     lockSetup(true);
     netStatus('#host-status', 'Creando sala…', { cancel: true });
     link.host(total);
   }
 
+  // El anfitrión vuelve a abrir el juego: recupera la sala con el mismo código y espera
+  // a que cada invitado vuelva a entrar (lo hacen solos si siguen con el juego abierto).
+  function resumeHost(save, game) {
+    if (!netAvailable('#host-status')) return;
+    leaveNetwork();
+    const cfg = save.net.cfg;
+    const online = cfg.seats.map((s, i) => i).filter(i => cfg.seats[i].kind === 'online');
+    const link = makeHostLink();
+    state.net = link;
+    state.role = 'host';
+    state.local = 0;
+    state.lobby = { cfg, seatOf: new Map(), code: save.net.code, tokens: save.net.tokens || {}, away: new Set(online) };
+    state.away = online.slice();
+    state.testMode = false;
+    lockSetup(true);
+    attachHostGame(game);
+    showGame(game);
+    link.host(online.length, save.net.code);
+  }
+
+  function sendAway() {
+    const lobby = state.lobby;
+    state.away = lobby ? [...lobby.away].sort() : [];
+    if (state.net) state.net.send({ t: 'away', seats: state.away });
+    if (state.game) render();
+  }
+
   function hostMessage(link, msg, id) {
     if (state.net !== link || !msg) return;
     const lobby = state.lobby;
     if (msg.t === 'hello') {
+      // ¿Vuelve alguien que ya tenía asiento? Se reconoce por su clave secreta.
+      const token = typeof msg.token === 'string' ? msg.token : '';
+      const back = token ? Object.keys(lobby.tokens).map(Number).find(seat => lobby.tokens[seat] === token) : undefined;
+      if (back !== undefined) {
+        lobby.seatOf.forEach((seat, other) => { if (seat === back && other !== id) { lobby.seatOf.delete(other); link.kick(other); } });
+        lobby.seatOf.set(id, back);
+        lobby.away.delete(back);
+        if (state.game) {
+          link.send({ t: 'start', cards: state.cards, s: state.game.snapshot(), seat: back, away: [...lobby.away] }, id);
+          sendAway();
+        } else {
+          lobbyStatus();
+        }
+        return;
+      }
       const seat = freeSeats()[0];
       if (state.game || seat == null || lobby.seatOf.has(id)) { link.send({ t: 'full' }, id); link.kick(id); return; }
       const taken = new Set(lobby.seatOf.values());
       const others = lobby.cfg.seats.filter((s, i) => s.kind !== 'online' || taken.has(i)).map(s => s.name);
       lobby.cfg.seats[seat].name = uniqueName(String(msg.name || '').trim().slice(0, 20) || `Jugador ${seat + 1}`, others);
       lobby.seatOf.set(id, seat);
+      if (token) lobby.tokens[seat] = token;
       lobbyStatus();
       if (!freeSeats().length) {
         state.setup = lobby.cfg.seats.map(s => ({ name: s.name, ai: s.ai }));
@@ -716,18 +890,21 @@
     }
   }
 
-  // Si alguien se va antes de empezar, su asiento queda libre. Con la partida en curso, termina.
+  // Si alguien se va antes de empezar, su asiento queda libre. Con la partida en curso, la
+  // partida lo espera: puede volver a entrar con el mismo código.
   function guestLeft(link, id) {
     if (state.net !== link || !state.lobby) return;
-    const seat = state.lobby.seatOf.get(id);
-    state.lobby.seatOf.delete(id);
+    const lobby = state.lobby;
+    const seat = lobby.seatOf.get(id);
+    lobby.seatOf.delete(id);
     if (seat == null) return;
-    const name = state.lobby.cfg.seats[seat].name;
     if (state.game) {
-      connectionLost(link, `${name} se desconectó. La partida terminó.`);
+      if (![...lobby.seatOf.values()].includes(seat)) lobby.away.add(seat);
+      sendAway();
       return;
     }
-    state.lobby.cfg.seats[seat].name = `Jugador ${seat + 1}`;
+    lobby.cfg.seats[seat].name = `Jugador ${seat + 1}`;
+    delete lobby.tokens[seat];
     lobbyStatus();
   }
 
@@ -741,23 +918,60 @@
       return;
     }
     leaveNetwork();
-    const name = $('#join-name').value.trim() || 'Jugador 2';
+    storeDel(SAVE_KEY);
+    lockSetup(true);
+    netStatus('#join-status', 'Conectando…', { cancel: true });
+    connectGuest({ code, token: randomToken(), name: $('#join-name').value.trim() || 'Jugador 2' });
+  }
+
+  // Volver a una sala en la que ya se estaba jugando (desde el aviso de la pantalla inicial).
+  function rejoinRoom(session) {
+    if (!netAvailable('#join-status')) { $('#join-dialog').showModal(); return; }
+    leaveNetwork();
+    lockSetup(true);
+    state.reconnect = { tries: 0, since: Date.now(), timer: null };
+    $('#join-dialog').showModal();
+    netStatus('#join-status', `Volviendo a la sala ${session.code}…`, { cancel: true });
+    connectGuest(session);
+  }
+
+  function connectGuest(session) {
     const link = new SM.Net.Link({
       onOpen: () => {
         if (state.net !== link) return;
-        link.send({ t: 'hello', name });
-        netStatus('#join-status', 'Conectado. Esperando a que empiece la partida…', { cancel: true });
+        link.send({ t: 'hello', name: session.name, token: session.token });
+        if (!state.game && !state.reconnect) netStatus('#join-status', 'Conectado. Esperando a que empiece la partida…', { cancel: true });
       },
       onMessage: msg => guestMessage(link, msg),
-      onClose: () => connectionLost(link),
-      onError: text => connectionLost(link, text),
+      onClose: () => guestDropped(link),
+      onError: text => guestDropped(link, text),
     });
     state.net = link;
     state.role = 'guest';
-    state.local = 1;
-    lockSetup(true);
-    netStatus('#join-status', 'Conectando…', { cancel: true });
-    link.join(code);
+    state.session = session;
+    link.join(session.code);
+  }
+
+  // El invitado perdió la conexión: con la partida en curso (o al volver a una sala) se
+  // reintenta solo durante un rato, por si fue un corte breve o el anfitrión recargó.
+  const RECONNECT_EVERY = 3000;
+  const RECONNECT_FOR = 3 * 60 * 1000;
+
+  function guestDropped(link, text) {
+    if (state.net !== link) return;
+    const playing = state.game && state.game.phase !== 'over';
+    if (!playing && !state.reconnect) { connectionLost(link, text); return; }
+    const r = state.reconnect || (state.reconnect = { tries: 0, since: Date.now(), timer: null });
+    if (Date.now() - r.since > RECONNECT_FOR) {
+      state.reconnect = null;
+      connectionLost(link, 'No se pudo volver a conectar con la sala. Si el anfitrión vuelve a abrirla, puedes reintentar desde la pantalla inicial.');
+      return;
+    }
+    r.tries++;
+    if (state.game) render();
+    else netStatus('#join-status', `No se encuentra la sala ${state.session.code} todavía. Reintentando (${r.tries})…`, { cancel: true });
+    clearTimeout(r.timer);
+    r.timer = setTimeout(() => { if (state.reconnect === r) connectGuest(state.session); }, RECONNECT_EVERY);
   }
 
   function guestMessage(link, msg) {
@@ -768,9 +982,16 @@
         ? `Conectado. Faltan ${missing} jugador${missing > 1 ? 'es' : ''} por unirse…`
         : 'Conectado. Empezando…', { cancel: true });
     } else if (msg.t === 'full') {
+      if (state.reconnect) clearTimeout(state.reconnect.timer);
+      state.reconnect = null;
+      storeDel(SESSION_KEY);
       connectionLost(link, 'Esa sala ya está completa o la partida ya empezó.');
     } else if (msg.t === 'start') {
+      if (state.reconnect) clearTimeout(state.reconnect.timer);
+      state.reconnect = null;
       state.local = msg.seat;
+      state.away = Array.isArray(msg.away) ? msg.away : [];
+      storeSet(SESSION_KEY, Object.assign({}, state.session, { seat: msg.seat, at: Date.now() }));
       const game = SM.Game.fromSnapshot(msg.cards, msg.s);
       // Las jugadas del invitado se envían al anfitrión; el resultado vuelve como 'state'.
       NET_ACTIONS.forEach(m => {
@@ -779,15 +1000,21 @@
       showGame(game);
     } else if (msg.t === 'state' && state.game) {
       state.game.applySnapshot(msg.s);
+    } else if (msg.t === 'away') {
+      state.away = Array.isArray(msg.seats) ? msg.seats : [];
+      if (state.game) render();
     }
   }
 
   function leaveNetwork() {
     const link = state.net;
+    if (state.reconnect) clearTimeout(state.reconnect.timer);
+    state.reconnect = null;
     state.net = null;
     state.role = null;
     state.local = 0;
     state.lobby = null;
+    state.away = [];
     if (link) link.close();
     netStatus('#host-status', '');
     netStatus('#join-status', '');
@@ -813,7 +1040,7 @@
 
   function canAct() {
     const g = state.game;
-    return !!g && g.phase === 'action' && controls(g.currentPlayer);
+    return !!g && g.phase === 'action' && controls(g.currentPlayer) && !state.reconnect;
   }
 
   // Jugador que se muestra abajo (a la izquierda). En red y contra máquinas, siempre tú;
@@ -884,6 +1111,9 @@
       box.append(score);
     }
     if (state.role) box.append(el('span', 'muted', `En red · los demás te ven como «${g.players[state.local].name}»`));
+    if (state.away.length && g.phase !== 'over') {
+      box.append(el('span', 'badge away-badge', '⚠ Desconectado: ' + state.away.map(i => g.players[i] && g.players[i].name).filter(Boolean).join(', ')));
+    }
   }
 
   function stat(label, value) {
@@ -1312,6 +1542,17 @@
     const p = g.currentPlayer;
     if (g.phase === 'over') { box.hidden = true; return; }
     box.hidden = false;
+    // Invitado sin conexión: se reintenta solo; mientras tanto no se puede jugar.
+    if (state.reconnect) {
+      box.append(el('p', 'warn', `📡 Se perdió la conexión con la sala. Reconectando… (intento ${state.reconnect.tries})`));
+      box.append(button('Salir de la partida', 'secondary small', () => { if (confirm('¿Dejar de intentar y salir?')) { forgetSaved(); backToSetup(); } }));
+      return;
+    }
+    if (state.away.includes(p.index) && !controls(p)) {
+      const code = state.lobby ? state.lobby.code : state.session && state.session.code;
+      box.append(el('p', 'warn', `${p.name} se desconectó. Esperando a que vuelva a entrar${code ? ` (sala ${code})` : ''}…`));
+      return;
+    }
     if (g.phase === 'peek' && !controls(p)) { box.append(el('p', null, `${p.name} está mirando un mazo con la Lupa…`)); return; }
     if (p.ai) { box.append(el('p', null, `${p.name} está pensando…`)); return; }
     if (!controls(p)) { box.append(el('p', null, `Esperando a ${p.name}…`)); return; }
@@ -1488,9 +1729,21 @@
       const r1 = el('span', 'ts-row'); r1.append(el('b', null, 'Aa'), el('span', 'ts-chip'));
       const r2 = el('span', 'ts-row'); r2.append(el('span', 'ts-accent'), el('span', 'ts-ok'), el('span', 'ts-chip'));
       sw.append(r1, r2);
-      b.append(sw, el('span', null, t.label));
+      if (t.num) {
+        const img = new Image();
+        img.className = 'ts-mon';
+        img.alt = '';
+        img.src = `img/pokemon/thumbs/${t.num}.png`;
+        img.onerror = () => img.remove();
+        sw.append(img);
+      }
+      const name = el('span', 'theme-name');
+      name.append(el('span', null, t.label));
+      if (t.hint) name.append(el('small', null, t.hint));
+      b.append(sw, name);
+      b.title = t.hint ? `${t.label}: ${t.hint}` : t.label;
       picker.append(b);
-      const opt = el('option', null, 'Tema: ' + t.label);
+      const opt = el('option', null, 'Tema: ' + t.label + (t.hint ? ` (${t.hint})` : ''));
       opt.value = t.id;
       select.append(opt);
     });
@@ -1634,8 +1887,6 @@
   }
 
   async function initBackgrounds() {
-    // Abierto con doble clic: la lista no se puede actualizar sola; se explica cómo abrirlo.
-    $('#bg-file-hint').hidden = location.protocol !== 'file:';
     renderBackgroundPicker();
     $('#bg-select').addEventListener('change', () => setBackground($('#bg-select').value));
     const wanted = savedBackgroundId();

@@ -5,49 +5,49 @@ SM.BACKGROUND_IMAGES = [
         "id":  "img-all-stars",
         "label":  "All Stars",
         "img":  "img/backgrounds/All_Stars.jpg",
-        "fill":  "#877c73",
-        "width":  7680,
-        "height":  4320
+        "fill":  "#887d74",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-blaziken-vs-lucario",
         "label":  "Blaziken vs Lucario",
         "img":  "img/backgrounds/Blaziken_vs_Lucario.jpg",
-        "fill":  "#828772",
-        "width":  5377,
-        "height":  3023
+        "fill":  "#848973",
+        "width":  2560,
+        "height":  1439
     },
     {
         "id":  "img-ceruledge",
         "label":  "Ceruledge",
         "img":  "img/backgrounds/Ceruledge.jpg",
-        "fill":  "#604292",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#614292",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-charizard",
         "label":  "Charizard",
         "img":  "img/backgrounds/Charizard.jpg",
-        "fill":  "#989995",
-        "width":  3882,
-        "height":  2743
+        "fill":  "#969894",
+        "width":  2560,
+        "height":  1809
     },
     {
         "id":  "img-eevee",
         "label":  "EEVEE",
         "img":  "img/backgrounds/EEVEE.jpg",
-        "fill":  "#bbad93",
-        "width":  5120,
-        "height":  2870
+        "fill":  "#baac94",
+        "width":  2560,
+        "height":  1435
     },
     {
         "id":  "img-eevee-blue-night",
         "label":  "EEVEE Blue Night",
         "img":  "img/backgrounds/EEVEE_Blue_Night.jpg",
-        "fill":  "#388bc2",
-        "width":  5120,
-        "height":  2870
+        "fill":  "#3b8ec4",
+        "width":  2560,
+        "height":  1435
     },
     {
         "id":  "img-estanque",
@@ -61,80 +61,80 @@ SM.BACKGROUND_IMAGES = [
         "id":  "img-evolutions",
         "label":  "Evolutions",
         "img":  "img/backgrounds/Evolutions.jpg",
-        "fill":  "#181c10",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#1a1d10",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-gengar",
         "label":  "Gengar",
         "img":  "img/backgrounds/Gengar.jpg",
-        "fill":  "#423c54",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#413c54",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-lucario",
         "label":  "Lucario",
         "img":  "img/backgrounds/Lucario.jpg",
-        "fill":  "#8496a1",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#8296a0",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-mudkip",
         "label":  "Mudkip",
         "img":  "img/backgrounds/Mudkip.jpg",
-        "fill":  "#71b5d4",
-        "width":  5120,
-        "height":  2870
+        "fill":  "#70b5d5",
+        "width":  2560,
+        "height":  1435
     },
     {
         "id":  "img-pikachu",
         "label":  "Pikachu",
         "img":  "img/backgrounds/Pikachu.jpg",
-        "fill":  "#818060",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#807f60",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-pokemon-go-teams",
         "label":  "Pokemon Go Teams",
         "img":  "img/backgrounds/Pokemon_Go_Teams.jpg",
-        "fill":  "#82615b",
-        "width":  5469,
-        "height":  3240
+        "fill":  "#7e5e58",
+        "width":  2560,
+        "height":  1517
     },
     {
         "id":  "img-pokemon-harbor",
         "label":  "Pokemon Harbor",
         "img":  "img/backgrounds/Pokemon_Harbor.jpg",
-        "fill":  "#9fb3be",
-        "width":  5120,
-        "height":  2880
+        "fill":  "#a1b4be",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-satoshi-greninja-vs-charizard-x",
         "label":  "Satoshi Greninja vs Charizard X",
         "img":  "img/backgrounds/Satoshi_Greninja_vs_Charizard_X.jpg",
-        "fill":  "#547b85",
-        "width":  4183,
-        "height":  2236
+        "fill":  "#587f8a",
+        "width":  2560,
+        "height":  1368
     },
     {
         "id":  "img-sir-fetch",
         "label":  "Sir\u0027fetch",
         "img":  "img/backgrounds/Sir\u0027fetch.jpg",
-        "fill":  "#cccfcc",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#cccecc",
+        "width":  2560,
+        "height":  1440
     },
     {
         "id":  "img-zeraora",
         "label":  "Zeraora",
         "img":  "img/backgrounds/Zeraora.jpg",
-        "fill":  "#6f9588",
-        "width":  3840,
-        "height":  2160
+        "fill":  "#6f9486",
+        "width":  2560,
+        "height":  1440
     }
 ];

@@ -40,6 +40,9 @@
       </div>
     </header>
 
+    <!-- Continuar una partida guardada o volver a una sala en red (lo llena js/ui.js) -->
+    <div id="resume" class="resume-bar" role="status" hidden></div>
+
     <div class="setup-panels">
       <div class="panel">
         <h2>1. Pokémon</h2>
@@ -172,12 +175,7 @@
         <div id="theme-picker" class="theme-picker" role="group" aria-label="Elegir tema"></div>
       </section>
       <section>
-        <h3 class="with-help">Fondo
-          <span id="bg-file-hint" class="help" hidden>
-            <button type="button" class="help-btn" aria-label="¿No aparecen tus imágenes?" aria-describedby="bg-help-text">?</button>
-            <span id="bg-help-text" class="help-pop" role="tooltip">¿Agregaste o cambiaste imágenes en <code>img/backgrounds</code> y no aparecen? Abre el juego con <b>Jugar.bat</b> (no con doble clic en <code>index.html</code>): así se actualiza la lista de fondos.</span>
-          </span>
-        </h3>
+        <h3>Fondo</h3>
         <p class="muted">Se guarda en este navegador. Cada jugador ve el fondo que eligió.</p>
         <div id="bg-picker" class="bg-picker" role="group" aria-label="Elegir fondo"></div>
       </section>

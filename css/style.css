@@ -2536,6 +2536,20 @@ dialog::backdrop {
   --warn: #ff8a6b;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(80, 20, 140, 0.35);
 }
+/* Charmander: crema cálido, acento naranja fuego y detalles amarillos */
+[data-theme="fire"] {
+  --bg: #fdebd3;
+  --surface: #fff8ee;
+  --surface-2: #ffefc4;
+  --ink: #2b1a0e;
+  --muted: #7a5638;
+  --line: #f1c99a;
+  --accent: #e8661c;
+  --accent-ink: #ffffff;
+  --ok: #2c8a52;
+  --warn: #b83a12;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(232, 102, 28, 0.14);
+}
 /* Bosque: verdes suaves, acento musgo */
 [data-theme="forest"] {
   --bg: #e5ecdf;
@@ -2563,6 +2577,34 @@ dialog::backdrop {
   --ok: #4cd28a;
   --warn: #ffa26b;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 30, 70, 0.4);
+}
+/* Zapdos: casi negro con amarillo eléctrico */
+[data-theme="zapdos"] {
+  --bg: #13120b;
+  --surface: #1f1d12;
+  --surface-2: #2b2817;
+  --ink: #fdf6d8;
+  --muted: #bcb184;
+  --line: #433d22;
+  --accent: #f5c518;
+  --accent-ink: #1a1500;
+  --ok: #5fd68f;
+  --warn: #ff9f43;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(245, 197, 24, 0.12);
+}
+/* Moltres: rojo brasa oscuro con naranja fuego */
+[data-theme="moltres"] {
+  --bg: #1c0d09;
+  --surface: #2b1510;
+  --surface-2: #3b1d15;
+  --ink: #fff0e2;
+  --muted: #d4a98d;
+  --line: #5a3026;
+  --accent: #ff7a1a;
+  --accent-ink: #ffffff;
+  --ok: #5fd68f;
+  --warn: #ffc14d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(255, 90, 20, 0.2);
 }
 /* Cristal: paneles translúcidos que dejan ver el fondo desenfocado (ideal con fondos de imagen) */
 [data-theme="glass"] {
@@ -2602,10 +2644,10 @@ dialog::backdrop {
     color-scheme: dark;
   }
 }
-:root:is([data-theme="dark"], [data-theme="gengar"], [data-theme="ocean"], [data-theme="glass-dark"]) {
+:root:is([data-theme="dark"], [data-theme="gengar"], [data-theme="ocean"], [data-theme="zapdos"], [data-theme="moltres"], [data-theme="glass-dark"]) {
   color-scheme: dark;
 }
-:root:is([data-theme="light"], [data-theme="pokedex"], [data-theme="forest"], [data-theme="glass"]) {
+:root:is([data-theme="light"], [data-theme="pokedex"], [data-theme="fire"], [data-theme="forest"], [data-theme="glass"]) {
   color-scheme: light;
 }
 /* El efecto vidrio: desenfoca lo que hay detrás de cada panel */
@@ -2719,6 +2761,8 @@ html:is(
     [data-theme="dark"],
     [data-theme="gengar"],
     [data-theme="ocean"],
+    [data-theme="zapdos"],
+    [data-theme="moltres"],
     [data-theme="glass-dark"]
   ):is(:not([class*="bg-"]), .bg-metal) {
   --metal-1: #3a3f47;
@@ -2734,6 +2778,7 @@ html:is(
 html:is(
     [data-theme="light"],
     [data-theme="pokedex"],
+    [data-theme="fire"],
     [data-theme="forest"],
     [data-theme="glass"]
   ):is(:not([class*="bg-"]), .bg-metal) {
@@ -2746,78 +2791,6 @@ html:is(
   --metal-line: rgba(255, 255, 255, 0.22);
   --metal-line-dark: rgba(0, 0, 0, 0.035);
   --on-bg: var(--ink);
-}
-
-/* Ayuda "?" con explicación al pasar el mouse, al enfocarla con el teclado o al tocarla */
-.with-help {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.help {
-  position: relative;
-  display: inline-flex;
-}
-.help-btn {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-2);
-  color: var(--muted);
-  border: 1px solid var(--line);
-  font-size: 0.8rem;
-  font-weight: 800;
-  line-height: 1;
-}
-.help-btn:hover,
-.help-btn:focus-visible {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-}
-.help-pop {
-  position: absolute;
-  left: -6px;
-  top: calc(100% + 8px);
-  z-index: 30;
-  width: max-content;
-  max-width: min(320px, calc(100vw - 32px));
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--ink);
-  color: var(--surface);
-  font-size: 0.82rem;
-  font-weight: 400;
-  line-height: 1.45;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.15s,
-    visibility 0.15s;
-  pointer-events: none;
-}
-.help-pop::before {
-  content: "";
-  position: absolute;
-  left: 11px;
-  top: -6px;
-  border: 6px solid transparent;
-  border-top: 0;
-  border-bottom-color: var(--ink);
-}
-.help-pop code {
-  font-size: 0.78rem;
-  color: inherit;
-}
-.help:hover .help-pop,
-.help:focus-within .help-pop {
-  opacity: 1;
-  visibility: visible;
 }
 
 /* Aviso legal: fijo al pie de todas las pantallas. Su altura queda en --footer-h. */
@@ -3140,4 +3113,57 @@ html:is(
 }
 .legal-body a {
   color: var(--accent);
+}
+
+/* Aviso para continuar una partida guardada o volver a una sala */
+.resume-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  box-shadow: var(--shadow);
+}
+.resume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px 10px;
+  flex-wrap: wrap;
+}
+.resume-bar p {
+  margin: 0;
+  flex: 1 1 260px;
+  font-weight: 600;
+}
+.away-badge {
+  background: var(--warn);
+}
+
+/* Temas con nombre de Pokémon: sprite en la muestra y descripción bajo el nombre */
+.theme-swatch {
+  position: relative;
+}
+.theme-swatch .ts-mon {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+.theme-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.theme-name small {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--muted);
 }
