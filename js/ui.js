@@ -388,6 +388,7 @@
   // --footer-h para que la página deje ese espacio libre y nada quede tapado.
   function initFooter() {
     const footer = $('#legal');
+    $('#app-version').textContent = 'v' + C.VERSION;
     const update = () => document.documentElement.style.setProperty('--footer-h', footer.offsetHeight + 'px');
     update();
     if (window.ResizeObserver) new ResizeObserver(update).observe(footer);
@@ -568,6 +569,9 @@
       const snap = game.snapshot();
       state.lobby.seatOf.forEach((seat, id) => link.send({ t: 'start', cards: state.cards, s: snap, seat }, id));
     }
+    SM.Stats.gameStarted({
+      players: state.setup.length, teams: game.teams, online: state.role === 'host', ai: state.setup.some(p => p.ai),
+    });
     showGame(game);
   }
 

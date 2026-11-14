@@ -82,5 +82,14 @@ Los valores se ajustan en `js/config.js`.
 | `js/game.js` | Estado y reglas de la partida |
 | `js/ai.js` | Rival controlado por la máquina |
 | `js/net.js` | Conexión en red entre dos navegadores (PeerJS) |
+| `js/stats.js` | Estadísticas anónimas con GoatCounter (visitas y partidas iniciadas) |
 | `js/ui.js` | Interfaz |
 | `data/sample-monsters.js` | Criaturas de ejemplo (para abrir el juego sin servidor) |
+
+## Estadísticas
+
+Para saber cuántas personas entran y cuántas partidas se juegan, el juego puede usar [GoatCounter](https://www.goatcounter.com) (gratis, sin cookies). Pon el código de tu cuenta en `GOATCOUNTER_CODE` de `js/config.js`. Se registran las visitas y cada partida iniciada según su tipo (por ejemplo `partida/4-jugadores/equipos/red`), sin nombres ni datos personales. Con el código vacío, o abriendo el juego con doble clic, no se cuenta nada.
+
+## Versión
+
+El número de versión del pie de página está en `VERSION` de `js/config.js`.
