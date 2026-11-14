@@ -79,7 +79,8 @@
         </div>
         <p id="mode-note" class="muted small-note mode-note"></p>
         <div id="seats" class="seats"></div>
-        <label class="test-mode">
+        <!-- Solo para desarrollo: se muestra en local o con ?dev en la dirección (ver devMode en js/ui.js) -->
+        <label id="test-mode-row" class="test-mode" hidden>
           <input type="checkbox" id="test-mode">
           <span><strong>Modo prueba:</strong> atrapa cualquier Pokémon gratis desde «Catálogo» durante la partida. No funciona en red.</span>
         </label>

@@ -272,6 +272,13 @@
       if (confirm(msg)) backToSetup();
     });
 
+    // Modo prueba: oculto para los jugadores. Aparece al abrir el juego en el propio PC
+    // (doble clic, Jugar.bat o localhost) o agregando ?dev a la dirección.
+    const devMode = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+      || new URLSearchParams(location.search).has('dev');
+    $('#test-mode-row').hidden = !devMode;
+    if (!devMode) $('#test-mode').checked = false;
+
     initPanelDialogs();
     initFooter();
     initCatalog();
