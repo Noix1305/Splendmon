@@ -313,7 +313,7 @@
   // con Esc o con un clic fuera del contenido.
   function initPanelDialogs() {
     [['#style-open', '#style-dialog'], ['#legend-open', '#legend-dialog'], ['#format-open', '#format-dialog'],
-      ['#join-open', '#join-dialog']].forEach(([btn, sel]) => {
+      ['#join-open', '#join-dialog'], ['#legal-open', '#legal-dialog']].forEach(([btn, sel]) => {
       const dlg = $(sel);
       $(btn).addEventListener('click', () => { if (!dlg.open) dlg.showModal(); });
       dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
