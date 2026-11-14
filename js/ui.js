@@ -272,6 +272,13 @@
       if (confirm(msg)) backToSetup();
     });
 
+    // Modo prueba: oculto para los jugadores. Aparece al abrir el juego en el propio PC
+    // (doble clic, Jugar.bat o localhost) o agregando ?dev a la dirección.
+    const devMode = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+      || new URLSearchParams(location.search).has('dev');
+    $('#test-mode-row').hidden = !devMode;
+    if (!devMode) $('#test-mode').checked = false;
+
     initPanelDialogs();
     initFooter();
     initCatalog();
@@ -306,7 +313,7 @@
   // con Esc o con un clic fuera del contenido.
   function initPanelDialogs() {
     [['#style-open', '#style-dialog'], ['#legend-open', '#legend-dialog'], ['#format-open', '#format-dialog'],
-      ['#join-open', '#join-dialog']].forEach(([btn, sel]) => {
+      ['#join-open', '#join-dialog'], ['#legal-open', '#legal-dialog']].forEach(([btn, sel]) => {
       const dlg = $(sel);
       $(btn).addEventListener('click', () => { if (!dlg.open) dlg.showModal(); });
       dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
