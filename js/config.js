@@ -94,6 +94,10 @@ SM.Config = Object.freeze({
     { id: 'plain',    label: 'Liso' },
   ],
 
+  // Objetos (ver js/items.js).
+  MAX_ITEMS: 3,        // objetos de un solo uso que puede guardar cada jugador
+  ITEM_SHOP_SIZE: 3,   // objetos a la vista en la tienda
+
   // Reglas.
   TARGET_POINTS: 18,
   MAX_TOKENS: 10,

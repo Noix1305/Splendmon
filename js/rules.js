@@ -272,6 +272,29 @@
       },
     },
     {
+      title: 'Objetos', icon: '🎒',
+      render(box) {
+        box.append(
+          p(`En la mesa hay una <b>tienda</b> con ${C.ITEM_SHOP_SIZE} objetos a la vista. Comprar uno es <b>tu acción del turno</b>.`),
+          p(`Se pagan con pokébolas <b>de tu mano</b> (las generadas por tus capturas no descuentan); lo que falte, con ${WILD()}.`),
+          p(`Puedes guardar hasta <b>${C.MAX_ITEMS}</b> objetos de un uso. Tu rival solo ve cuántos tienes, no cuáles. Los <b>permanentes</b> se ven y no ocupan espacio.`),
+          p('Usar un objeto no gasta tu acción: se usa en el momento que corresponde (al capturar, al tomar, al evolucionar…).'),
+          p('Cada objeto existe <b>una sola vez</b>. Mientras alguien lo tiene no aparece en la tienda; cuando lo usa, <b>vuelve al mazo</b> de la tienda.'),
+        );
+        const list = U.el('div', 'rules-items');
+        SM.Items.list.forEach(def => {
+          const row = U.el('div', 'rules-item');
+          row.append(U.itemEl({ uid: 'demo-' + def.id, id: def.id, cost: {} }, { size: 'small', showCost: false }));
+          const txt = U.el('div');
+          txt.append(U.el('b', null, `${def.name} · ${def.price} pokébola${def.price > 1 ? 's' : ''}`));
+          txt.append(U.el('div', 'muted', def.text));
+          row.append(txt);
+          list.append(row);
+        });
+        box.append(list);
+      },
+    },
+    {
       title: 'Fin del turno y de la partida', icon: '🏁',
       render(box) {
         box.append(

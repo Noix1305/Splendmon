@@ -41,6 +41,7 @@
       <div class="data-buttons">
         <button id="use-sample" class="secondary" type="button">Usar los Pokémon de ejemplo</button>
         <button id="catalog-open" class="secondary" type="button" disabled>Ver Pokémon</button>
+        <button id="catalog-items" class="secondary" type="button">Ver objetos</button>
       </div>
       <div id="data-summary" class="summary"></div>
     </div>
@@ -103,7 +104,7 @@
 
     <footer class="legal">
       <p><strong>Proyecto de fans sin fines de lucro.</strong> No está afiliado, patrocinado ni aprobado por Nintendo, Creatures Inc., GAME FREAK, The Pokémon Company ni Space Cowboys.</p>
-      <p>Pokémon y los nombres e imágenes de sus personajes © Nintendo, Creatures Inc. y GAME FREAK. Splendor es una marca de Space Cowboys. Sprites de Pokémon y pokébolas: <a href="https://github.com/msikma/pokesprite" target="_blank" rel="noopener">PokéSprite</a> (licencia MIT, ver <code>img/POKESPRITE-LICENSE.md</code>). Las imágenes de fondo pertenecen a sus respectivos autores.</p>
+      <p>Pokémon y los nombres e imágenes de sus personajes © Nintendo, Creatures Inc. y GAME FREAK. Splendor es una marca de Space Cowboys. Sprites de Pokémon, pokébolas y objetos: <a href="https://github.com/msikma/pokesprite" target="_blank" rel="noopener">PokéSprite</a> (licencia MIT, ver <code>img/POKESPRITE-LICENSE.md</code>). Las imágenes de fondo pertenecen a sus respectivos autores.</p>
     </footer>
   </section>
 
@@ -114,7 +115,7 @@
         <select id="theme-select" aria-label="Tema" title="Tema"></select>
         <select id="bg-select" aria-label="Fondo" title="Fondo"></select>
         <button id="rules-game" class="secondary small" type="button">Reglas</button>
-        <button id="catalog-game" class="secondary small" type="button">Pokémon</button>
+        <button id="catalog-game" class="secondary small" type="button">Catálogo</button>
         <button id="quit" class="secondary small" type="button">Salir</button>
       </div>
     </header>
@@ -133,7 +134,11 @@
 
   <dialog id="catalog-dialog" class="catalog-dialog" aria-labelledby="catalog-title">
     <div class="catalog-head">
-      <h2 id="catalog-title">Pokémon</h2>
+      <h2 id="catalog-title">Catálogo</h2>
+      <div id="catalog-tabs" class="catalog-tabs" role="tablist" aria-label="Qué ver">
+        <button type="button" role="tab" data-view="pokemon">Pokémon</button>
+        <button type="button" role="tab" data-view="items">Objetos</button>
+      </div>
       <span id="catalog-count" class="muted"></span>
       <button id="catalog-close" class="secondary small" type="button">Cerrar</button>
     </div>
@@ -153,6 +158,7 @@
   <script src="img/backgrounds/fondos.js"></script>
   <script src="js/config.js"></script>
   <script src="js/cards.js"></script>
+  <script src="js/items.js"></script>
   <script src="js/game.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/net.js"></script>

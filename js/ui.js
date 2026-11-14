@@ -16,7 +16,8 @@
   const testing = () => state.testMode && !!state.game && !state.role;
 
   // Lo único que el invitado puede pedirle al anfitrión.
-  const NET_ACTIONS = ['takeTokens', 'reserve', 'buy', 'pass', 'evolve', 'skipEvolution', 'returnToken'];
+  const NET_ACTIONS = ['takeTokens', 'reserve', 'buy', 'pass', 'evolve', 'skipEvolution', 'returnToken',
+    'buyItem', 'swapTokens', 'useLens', 'reservePeek', 'usePotion', 'sellNugget', 'useDowsing', 'useTicket'];
 
   // ---------- Piezas comunes
 
@@ -355,7 +356,7 @@
     if ($('#card-dialog').open) closeDialog();
     if ($('#catalog-dialog').open) $('#catalog-dialog').close();
     state.game = game;
-    game.onChange(() => { state.selection = []; render(); });
+    game.onChange(() => { state.selection = []; state.bike = null; render(); });
     $('#setup').hidden = true;
     $('#game').hidden = false;
     render();
@@ -598,6 +599,9 @@
     row('Total', 'total', gem => p.tokens[gem] + (gem === C.WILD ? 0 : bonus[gem]), 'Lo que puedes pagar de cada tipo.');
     body.append(gems);
 
+    const items = playerItemsEl(p);
+    if (items) body.append(items);
+
     const captured = el('div', 'captured');
     if (!p.cards.length) captured.append(el('span', 'muted', 'Aún sin criaturas.'));
     p.cards.slice()
@@ -625,13 +629,28 @@
     box.append(body);
   }
 
+  // Pokébolas extra que da la Bicicleta activada (0 si no).
+  function bikeExtra() {
+    const g = state.game;
+    const inst = state.bike && g.ownedItem(g.currentPlayer, state.bike, 'take');
+    return inst ? g.itemDef(inst).extra : 0;
+  }
+
+  // Se puede agregar esta pokébola a la selección (mismas reglas que el juego).
+  function canAddGem(gem) {
+    const g = state.game;
+    const sel = state.selection;
+    if (sel.includes(gem) && !(sel.length === 1 && sel[0] === gem)) return false;
+    return !g.takeProblem([...sel, gem], bikeExtra(), false);
+  }
+
   function clickBank(gem) {
     if (!canAct()) return;
     const sel = state.selection;
-    const g = state.game;
-    if (sel.length === 1 && sel[0] === gem && g.bank[gem] >= C.MIN_BANK_FOR_DOUBLE) sel.push(gem);
-    else if (sel.includes(gem)) state.selection = sel.filter(g => g !== gem);
-    else if (sel.length < 3 && !(sel.length === 2 && sel[0] === sel[1])) sel.push(gem);
+    // Tocar otra vez la única elegida = tomar 2 iguales; tocar una ya elegida = quitarla.
+    if (sel.length === 1 && sel[0] === gem && canAddGem(gem)) sel.push(gem);
+    else if (sel.includes(gem)) state.selection = sel.filter(x => x !== gem);
+    else if (canAddGem(gem)) sel.push(gem);
     render();
   }
 
@@ -643,17 +662,10 @@
     const active = canAct();
     const stacks = el('div', 'bank-stacks');
     const sel = state.selection;
-    // Si se puede agregar a la selección actual (mismas reglas que clickBank y checkTake).
-    const canAdd = gem => {
-      if (gem === C.WILD || g.bank[gem] === 0) return false;
-      if (sel.length === 1 && sel[0] === gem) return g.bank[gem] >= C.MIN_BANK_FOR_DOUBLE;
-      if (sel.includes(gem)) return false;
-      return sel.length < 3 && !(sel.length === 2 && sel[0] === sel[1]);
-    };
     [...C.GEMS, C.WILD].forEach(gem => {
       const count = sel.filter(x => x === gem).length;
       // Las ya elegidas siguen en color (se pueden quitar); las que no se pueden elegir, en blanco y negro.
-      const pickable = active && (count > 0 || canAdd(gem));
+      const pickable = active && (count > 0 || canAddGem(gem));
       const b = button('', 'bank-token' + (count ? ' selected' : '') + (pickable ? '' : ' unavailable'), () => clickBank(gem), !pickable);
       b.dataset.gem = gem;
       b.append(gemEl(gem, g.bank[gem]));
@@ -664,14 +676,29 @@
     box.append(stacks);
 
     if (active) {
-      const check = g.checkTake(state.selection);
+      const opts = bikeExtra() ? { bike: state.bike } : {};
+      const check = g.checkTake(state.selection, opts);
       const bar = el('div', 'take-bar');
-      bar.append(button('Tomar pokébolas', 'primary', () => g.takeTokens(state.selection.slice()), !check.ok));
+      bar.append(button('Tomar pokébolas', 'primary', () => g.takeTokens(state.selection.slice(), opts), !check.ok));
+      // Bicicleta: se activa aquí y permite tomar 1 más.
+      const bike = g.currentPlayer.items.find(i => g.itemDef(i).use === 'take');
+      if (bike) {
+        const on = !!bikeExtra();
+        const b = button(on ? '🚲 Bicicleta activada (+1)' : '🚲 Usar Bicicleta (+1)', on ? 'item-toggle on' : 'item-toggle', () => {
+          state.bike = on ? null : bike.uid;
+          state.selection = [];
+          render();
+        });
+        b.setAttribute('aria-pressed', String(on));
+        bar.append(b);
+      }
       if (state.selection.length) bar.append(button('Limpiar', 'secondary', () => { state.selection = []; render(); }));
       box.append(bar);
       const hint = state.selection.length
         ? (check.ok ? 'Listo para tomar.' : check.reason)
-        : `Puedes elegir 3 pokébolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, puedes elegir 2 iguales.`;
+        : bikeExtra()
+          ? `Con Bicicleta: 4 pokébolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, 2 iguales y 1 distinta.`
+          : `Puedes elegir 3 pokébolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, puedes elegir 2 iguales.`;
       box.append(el('p', 'hint', hint));
     }
   }
@@ -698,8 +725,230 @@
         });
         row.append(group);
       });
+      if (tiers[0] === 'legend') row.append(shopEl());
       if (row.childElementCount) box.append(row);
     });
+  }
+
+  // ---------- Objetos
+
+  // Sprite del objeto; si no carga, queda el emoji.
+  function itemIconEl(def) {
+    const box = el('span', 'item-icon');
+    if (!def.img) { box.textContent = def.icon; return box; }
+    const img = new Image();
+    img.className = 'item-sprite';
+    img.alt = '';
+    img.onerror = () => { img.remove(); box.textContent = def.icon; };
+    img.src = def.img;
+    box.append(img);
+    return box;
+  }
+
+  // Carta de objeto: icono, nombre, costo y si es de un uso o permanente.
+  function itemEl(inst, opts = {}) {
+    const def = SM.Items.def(inst.id);
+    const e = el('div', 'item-card' + (def.kind === 'relic' ? ' relic' : '') + (opts.size ? ' ' + opts.size : ''));
+    e.dataset.item = inst.uid;
+    e.append(el('span', 'item-kind', def.kind === 'relic' ? 'Permanente' : 'Un uso'));
+    e.append(itemIconEl(def), el('span', 'item-name', def.name));
+    if (opts.showCost !== false) {
+      const cost = el('div', 'item-cost');
+      [...C.GEMS].forEach(g => { if (inst.cost[g]) cost.append(gemEl(g, inst.cost[g], true)); });
+      e.append(cost);
+    }
+    if (opts.affordable) e.classList.add('affordable');
+    if (opts.onClick) makeClickable(e, opts.onClick, def.name);
+    e.title = def.text;
+    return e;
+  }
+
+  function itemBackEl() {
+    const e = el('div', 'item-card back');
+    e.append(el('span', 'item-icon', '🎒'), el('span', 'item-name', 'Objeto'));
+    return e;
+  }
+
+  // Tienda: mazo de objetos + los que están a la vista.
+  function shopEl() {
+    const g = state.game;
+    const group = el('div', 'market-group shop');
+    const deck = el('div', 'item-card shop-deck');
+    deck.append(el('span', 'item-icon', '🏪'), el('span', 'item-name', 'Tienda'), el('span', 'back-count', `${g.itemDeck.length} en el mazo`));
+    group.append(deck);
+    g.itemShop.forEach((inst, slot) => {
+      group.append(inst
+        ? itemEl(inst, { onClick: () => openItem(inst, { slot }), affordable: canAct() && g.checkBuyItem(slot).ok })
+        : el('div', 'item-card empty-slot'));
+    });
+    return group;
+  }
+
+  // Ventana de un objeto: qué hace, cuánto cuesta y, según dónde esté, comprar o usar.
+  function openItem(inst, where = {}) {
+    const g = state.game;
+    const def = SM.Items.def(inst.id);
+    const body = $('#card-dialog-body');
+    body.textContent = '';
+    const layout = el('div', 'dialog-layout');
+    layout.append(itemEl(inst, { size: 'big', showCost: where.slot != null && !where.browse }));
+    const info = el('div', 'dialog-info');
+    info.append(el('h2', null, `${def.icon} ${def.name}`));
+    info.append(el('p', 'muted', def.kind === 'relic' ? 'Permanente: funciona solo y no ocupa espacio de objeto.' : `De un solo uso. Puedes guardar hasta ${C.MAX_ITEMS}.`));
+    info.append(el('p', null, def.text));
+    const actions = el('div', 'dialog-actions');
+    const p = g ? g.currentPlayer : null;
+
+    if (where.browse) {
+      // Desde el catálogo: solo información.
+      info.append(el('p', 'muted', `Cuesta ${def.price} pokébola${def.price > 1 ? 's' : ''}; los tipos cambian en cada partida. Se compra en la tienda de la mesa.`));
+    } else if (where.slot != null) {
+      info.append(el('p', 'muted', 'Se paga con pokébolas de tu mano (las de tus capturas no descuentan). La Master Ball sirve de comodín. Comprar es tu acción del turno.'));
+      if (canAct()) {
+        const check = g.checkBuyItem(where.slot);
+        if (check.ok) info.append(paymentEl(check.pay));
+        else info.append(el('p', 'warn', check.reason));
+        actions.append(button('Comprar', 'primary', () => { closeDialog(); g.buyItem(where.slot); }, !check.ok));
+      }
+      if (testing()) {
+        g.players.forEach(pl => actions.append(button(isMe(pl) ? 'Obtenerlo yo (prueba)' : `Dar a ${pl.name} (prueba)`, 'secondary', () => {
+          closeDialog(); g.giveItem(where.slot, pl.index);
+        })));
+      }
+    } else if (where.owner === p && canAct()) {
+      // Cómo se usa cada objeto que tienes.
+      const how = {
+        evolve: 'Se usa al final de tu turno: cuando puedas evolucionar con él, aparecerá la opción.',
+        capture: 'Se usa al capturar: abre un Pokémon y elige «Capturar con Cupón».',
+        take: 'Se usa al tomar pokébolas: activa «Usar Bicicleta» junto al botón de tomar.',
+        reserve: 'Se usa al reservar: toca un mazo de Nivel 1, 2 o 3 y elige «Usar Lupa».',
+        passive: 'Funciona solo.',
+        market: 'Se usa desde una carta de la mesa: ábrela y elige «Cambiar con Ticket Barco».',
+      }[def.use];
+      if (how) info.append(el('p', 'note', how));
+      if (def.id === 'swap') actions.append(button('Usar ahora', 'primary', () => openSwap(inst)));
+      if (def.id === 'nugget') actions.append(button('Vender ahora', 'primary', () => openNugget(inst)));
+      if (def.id === 'potion') {
+        const check = g.checkPotion(inst.uid);
+        const back = g.potionRecovery(p);
+        if (check.ok) info.append(el('p', 'ok', 'Recuperas: ' + back.map(x => C.GEM_INFO[x].label).join(', ')));
+        else info.append(el('p', 'warn', check.reason));
+        actions.append(button('Usar ahora', 'primary', () => { closeDialog(); g.usePotion(inst.uid); }, !check.ok));
+      }
+      if (def.use === 'action') {
+        const check = g.checkDowsing(inst.uid);
+        if (!check.ok) info.append(el('p', 'warn', check.reason));
+        info.append(el('p', 'muted', 'Usarlo es tu acción del turno.'));
+        actions.append(button('Usar ahora', 'primary', () => { closeDialog(); g.useDowsing(inst.uid); }, !check.ok));
+      }
+    }
+    actions.append(button('Cerrar', 'secondary', closeDialog));
+    info.append(actions);
+    layout.append(info);
+    body.append(layout);
+    if (!$('#card-dialog').open) $('#card-dialog').showModal();
+  }
+
+  // Intercambiador: elegir qué das y qué recibes (hasta 2).
+  function openSwap(inst) {
+    const g = state.game;
+    const def = SM.Items.def(inst.id);
+    const p = g.currentPlayer;
+    const give = []; const take = [];
+    const body = $('#card-dialog-body');
+    const draw = () => {
+      body.textContent = '';
+      const info = el('div', 'dialog-info swap');
+      info.append(el('h2', null, `${def.icon} ${def.name}`));
+      info.append(el('p', 'muted', `Elige hasta ${def.max} pokébolas para dar y la misma cantidad para recibir. Toca una elegida para quitarla.`));
+      const rowOf = (label, list, from) => {
+        const r = el('div', 'swap-row');
+        r.append(el('b', null, label));
+        C.GEMS.forEach(gem => {
+          const n = list.filter(x => x === gem).length;
+          const left = from[gem] - n;
+          const b = button('', 'bank-token' + (n ? ' selected' : '') + (left > 0 && list.length < def.max ? '' : (n ? '' : ' unavailable')), () => {
+            if (n && (left <= 0 || list.length >= def.max)) list.splice(list.indexOf(gem), 1);
+            else if (left > 0 && list.length < def.max) list.push(gem);
+            else if (n) list.splice(list.indexOf(gem), 1);
+            draw();
+          });
+          b.append(gemEl(gem, from[gem]));
+          if (n) b.append(el('span', 'sel-mark', '×' + n));
+          r.append(b);
+        });
+        return r;
+      };
+      info.append(rowOf('Das (de tu mano)', give, p.tokens), rowOf('Recibes (disponibles)', take, g.bank));
+      const check = g.checkSwap(inst.uid, give, take);
+      if (give.length || take.length) info.append(el('p', check.ok ? 'ok' : 'warn', check.ok ? 'Listo.' : check.reason));
+      const actions = el('div', 'dialog-actions');
+      actions.append(
+        button('Intercambiar', 'primary', () => { closeDialog(); g.swapTokens(inst.uid, give.slice(), take.slice()); }, !check.ok),
+        button('Cancelar', 'secondary', closeDialog),
+      );
+      info.append(actions);
+      body.append(info);
+    };
+    draw();
+    if (!$('#card-dialog').open) $('#card-dialog').showModal();
+  }
+
+  // Pepita: elegir las pokébolas que recibes (se pueden repetir).
+  function openNugget(inst) {
+    const g = state.game;
+    const def = SM.Items.def(inst.id);
+    const want = g.nuggetCount(inst);
+    const take = [];
+    const body = $('#card-dialog-body');
+    const draw = () => {
+      body.textContent = '';
+      const info = el('div', 'dialog-info swap');
+      info.append(el('h2', null, `${def.icon} ${def.name}`));
+      info.append(el('p', 'muted', `Elige ${want} pokébola(s) de las disponibles. Puedes repetir. Toca una elegida para quitar una.`));
+      const r = el('div', 'swap-row');
+      C.GEMS.forEach(gem => {
+        const n = take.filter(x => x === gem).length;
+        const left = g.bank[gem] - n;
+        const can = left > 0 && take.length < want;
+        const b = button('', 'bank-token' + (n ? ' selected' : '') + (can || n ? '' : ' unavailable'), () => {
+          if (can) take.push(gem); else if (n) take.splice(take.indexOf(gem), 1);
+          draw();
+        });
+        b.append(gemEl(gem, g.bank[gem]));
+        if (n) b.append(el('span', 'sel-mark', '×' + n));
+        r.append(b);
+      });
+      info.append(r);
+      const check = g.checkNugget(inst.uid, take);
+      const actions = el('div', 'dialog-actions');
+      if (take.length) actions.append(button('Quitar todas', 'secondary', () => { take.length = 0; draw(); }));
+      actions.append(
+        button('Vender', 'primary', () => { closeDialog(); g.sellNugget(inst.uid, take.slice()); }, !check.ok),
+        button('Cancelar', 'secondary', closeDialog),
+      );
+      info.append(actions);
+      body.append(info);
+    };
+    draw();
+    if (!$('#card-dialog').open) $('#card-dialog').showModal();
+  }
+
+  // Objetos de un jugador en su tablero. Los del rival se ven tapados (solo la cantidad);
+  // los permanentes siempre se ven.
+  function playerItemsEl(p) {
+    const g = state.game;
+    if (!p.items.length && !p.relics.length) return null;
+    const box = el('div', 'player-items');
+    box.append(el('span', 'bt-label', `Objetos ${p.items.length} / ${g.itemLimit(p)}`));
+    const row = el('div', 'player-items-row');
+    const showFace = state.role ? p.index === state.local : !p.ai && (p === g.currentPlayer || g.players.some(o => o.ai));
+    p.items.forEach(inst => row.append(showFace
+      ? itemEl(inst, { size: 'small', showCost: false, onClick: () => openItem(inst, { owner: p }) })
+      : itemBackEl()));
+    p.relics.forEach(inst => row.append(itemEl(inst, { size: 'small', showCost: false, onClick: () => openItem(inst, { owner: p }) })));
+    box.append(row);
+    return box;
   }
 
   function renderPrompt() {
@@ -709,8 +958,20 @@
     const p = g.currentPlayer;
     if (g.phase === 'over') { box.hidden = true; return; }
     box.hidden = false;
+    if (g.phase === 'peek' && !controls(p)) { box.append(el('p', null, `${p.name} está mirando un mazo con la Lupa…`)); return; }
     if (p.ai) { box.append(el('p', null, `${p.name} está pensando…`)); return; }
     if (!controls(p)) { box.append(el('p', null, `Esperando a ${p.name}…`)); return; }
+
+    if (g.phase === 'peek' && p.peek) {
+      box.append(el('p', null, `🔍 Lupa: elige cuál reservar de las ${p.peek.uids.length} cartas de arriba del ${C.TIER_LABELS[p.peek.tier]}. Las demás quedan en el mazo.`));
+      const list = el('div', 'peek-options');
+      p.peek.uids.forEach(uid => {
+        const card = g.cards.get(uid);
+        list.append(cardEl(card, { size: 'small', onClick: () => g.reservePeek(uid) }));
+      });
+      box.append(list);
+      return;
+    }
 
     if (g.phase === 'action') {
       box.append(el('p', null, `${isMe(p) ? 'Tu turno' : p.name}: toma pokébolas, reserva una carta o captura un Pokémon. Los que tienen la etiqueta «¡Captúralo!» ya los puedes capturar.`));
@@ -719,7 +980,9 @@
       box.append(el('p', null, 'Puedes hacer evolucionar una criatura (gratis, una por turno):'));
       const list = el('div', 'evo-options');
       g.availableEvolutions().forEach(o => {
-        list.append(button(`${o.base.name} → ${o.target.name} (${o.target.points} pts)`, 'primary', () => g.evolve(o.base.uid, o.target.uid)));
+        const using = o.item ? ` · usa ${SM.Items.def(o.item.id).icon} ${SM.Items.def(o.item.id).name}` : '';
+        list.append(button(`${o.base.name} → ${o.target.name} (${o.target.points} pts)${using}`, o.item ? 'secondary' : 'primary',
+          () => g.evolve(o.base.uid, o.target.uid, o.item ? o.item.uid : null)));
       });
       list.append(button('No evolucionar', 'secondary', () => g.skipEvolution()));
       box.append(list);
@@ -1030,16 +1293,25 @@
 
   function initCatalog() {
     const dlg = $('#catalog-dialog');
-    $('#catalog-open').addEventListener('click', openCatalog);
-    $('#catalog-game').addEventListener('click', openCatalog);
+    $('#catalog-open').addEventListener('click', () => openCatalog('pokemon'));
+    $('#catalog-items').addEventListener('click', () => openCatalog('items'));
+    $('#catalog-game').addEventListener('click', () => openCatalog());
+    document.querySelectorAll('#catalog-tabs [data-view]').forEach(b => b.addEventListener('click', () => {
+      state.catalogView = b.dataset.view;
+      $('#catalog-search').value = '';
+      renderCatalog();
+    }));
     $('#catalog-close').addEventListener('click', () => dlg.close());
     $('#catalog-search').addEventListener('input', renderCatalog);
     // Clic fuera del contenido (en el fondo) cierra el catálogo.
     dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
   }
 
-  function openCatalog() {
-    if (!catalogCards().length) return;
+  // view: 'pokemon' u 'items'. Sin Pokémon cargados, se abre en objetos.
+  function openCatalog(view) {
+    state.catalogView = view || (catalogCards().length ? 'pokemon' : 'items');
+    if (state.catalogView === 'pokemon' && !catalogCards().length) state.catalogView = 'items';
+    $('#catalog-search').value = '';
     renderCatalog();
     const dlg = $('#catalog-dialog');
     if (!dlg.open) dlg.showModal();
@@ -1047,6 +1319,15 @@
   }
 
   function renderCatalog() {
+    const view = state.catalogView || 'pokemon';
+    document.querySelectorAll('#catalog-tabs [data-view]').forEach(b => {
+      const on = b.dataset.view === view;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', String(on));
+      b.disabled = b.dataset.view === 'pokemon' && !catalogCards().length;
+    });
+    $('#catalog-search').placeholder = view === 'items' ? 'Buscar objeto por nombre o efecto' : 'Buscar por nombre, número o tipo';
+    if (view === 'items') { renderItemCatalog(); return; }
     const cards = catalogCards();
     const tiers = $('#catalog-tiers');
     tiers.textContent = '';
@@ -1070,6 +1351,7 @@
     $('#catalog-count').textContent = `${shown.length} de ${cards.length}`;
     const grid = $('#catalog-grid');
     grid.textContent = '';
+    grid.classList.remove('items-view');
     if (!shown.length) grid.append(el('p', 'muted', 'No hay criaturas que coincidan.'));
     shown.forEach(card => {
       const node = cardEl(card, { onClick: () => openCard(card, { browse: true }) });
@@ -1078,6 +1360,54 @@
         node.classList.add('owned');
         node.append(el('span', 'owned-tag', displayName(owner)));
       }
+      grid.append(node);
+    });
+  }
+
+  // Catálogo de objetos: todos los objetos del juego, con filtros y búsqueda.
+  // En partida se marca dónde está cada uno, sin revelar los objetos ocultos del rival.
+  function renderItemCatalog() {
+    const g = state.game;
+    const filters = [['all', 'Todos'], ['consumable', 'Un uso'], ['relic', 'Permanentes']];
+    if (!filters.some(f => f[0] === state.itemFilter)) state.itemFilter = 'all';
+    const tiers = $('#catalog-tiers');
+    tiers.textContent = '';
+    filters.forEach(([kind, label]) => {
+      const n = SM.Items.list.filter(d => kind === 'all' || d.kind === kind).length;
+      const b = button(`${label} (${n})`, 'chip' + (state.itemFilter === kind ? ' selected' : ''), () => { state.itemFilter = kind; renderCatalog(); });
+      b.setAttribute('aria-pressed', String(state.itemFilter === kind));
+      tiers.append(b);
+    });
+
+    const q = $('#catalog-search').value.trim().toLowerCase();
+    const shown = SM.Items.list.filter(d => (state.itemFilter === 'all' || d.kind === state.itemFilter) &&
+      (!q || d.name.toLowerCase().includes(q) || d.text.toLowerCase().includes(q)));
+    $('#catalog-count').textContent = `${shown.length} de ${SM.Items.list.length}`;
+
+    // Dónde está cada objeto en la partida.
+    const where = id => {
+      if (!g) return null;
+      const slot = g.itemShop.findIndex(i => i && i.id === id);
+      if (slot >= 0) return { text: 'En la tienda', inst: g.itemShop[slot], slot };
+      for (const p of g.players) {
+        const relic = p.relics.find(i => i.id === id);
+        if (relic) return { text: isMe(p) ? 'Lo tienes' : `Lo tiene ${p.name}`, inst: relic };
+        const mine = p.items.find(i => i.id === id);
+        if (mine && (isMe(p) || (!state.role && !p.ai && p === g.currentPlayer))) return { text: isMe(p) ? 'Lo tienes' : `Lo tiene ${p.name}`, inst: mine };
+      }
+      return null;
+    };
+
+    const grid = $('#catalog-grid');
+    grid.textContent = '';
+    grid.classList.add('items-view');
+    if (!shown.length) grid.append(el('p', 'muted', 'No hay objetos que coincidan.'));
+    shown.forEach(def => {
+      const at = where(def.id);
+      const inst = at ? at.inst : { uid: 'cat-' + def.id, id: def.id, cost: {} };
+      const node = itemEl(inst, { showCost: false, onClick: () => openItem(inst, { browse: true }) });
+      node.append(el('span', 'item-price', `${def.price} pokébola${def.price > 1 ? 's' : ''}`));
+      if (at) node.append(el('span', 'item-where', at.text));
       grid.append(node);
     });
   }
@@ -1168,6 +1498,24 @@
       if (buy.ok) info.append(paymentEl(buy.pay));
       else info.append(el('p', 'warn', buy.reason));
       actions.append(button('Capturar', 'primary', () => { closeDialog(); g.buy(card.uid); }, !buy.ok));
+      // Ticket Barco: cambiar esta carta de la mesa por la de arriba de su mazo (gratis).
+      const ticket = loc.where === 'market' && g.currentPlayer.items.find(i => g.itemDef(i).use === 'market');
+      if (ticket) {
+        const tc = g.checkTicket(ticket.uid, card.uid);
+        actions.append(button('🎫 Cambiar con Ticket Barco', 'secondary', () => { closeDialog(); g.useTicket(ticket.uid, card.uid); }, !tc.ok));
+      }
+      // Cupón: otra forma de capturar, pagando menos.
+      const coupon = g.currentPlayer.items.find(i => g.itemDef(i).use === 'capture');
+      if (coupon) {
+        const withCoupon = g.checkBuy(card.uid, { coupon: coupon.uid });
+        if (withCoupon.ok) {
+          const line = paymentEl(withCoupon.pay);
+          line.firstChild.textContent = 'Con Cupón pagas: ';
+          info.append(line);
+        }
+        actions.append(button('🎟️ Capturar con Cupón', buy.ok ? 'secondary' : 'primary',
+          () => { closeDialog(); g.buy(card.uid, { coupon: coupon.uid }); }, !withCoupon.ok));
+      }
 
       if (loc.where === 'market' && C.RESERVABLE_TIERS.includes(loc.tier)) {
         const source = { type: 'market', tier: loc.tier, slot: loc.slot };
@@ -1195,10 +1543,14 @@
     info.append(el('p', null, `Puedes reservar la carta de arriba sin verla. Recibes una ${C.GEM_INFO[C.WILD].label} si quedan.`));
     const actions = el('div', 'dialog-actions');
     const source = { type: 'deck', tier };
-    actions.append(
-      button('Reservar carta oculta', 'primary', () => { closeDialog(); g.reserve(source); }, !g.checkReserve(source).ok),
-      button('Cerrar', 'secondary', closeDialog),
-    );
+    actions.append(button('Reservar carta oculta', 'primary', () => { closeDialog(); g.reserve(source); }, !g.checkReserve(source).ok));
+    // Lupa: mirar las de arriba y elegir cuál reservar.
+    const lens = g.currentPlayer.items.find(i => g.itemDef(i).use === 'reserve');
+    if (lens) {
+      const n = g.itemDef(lens).peek;
+      actions.append(button(`🔍 Usar Lupa (ver ${n} de arriba)`, 'secondary', () => { closeDialog(); g.useLens(lens.uid, tier); }, !g.checkLens(lens.uid, tier).ok));
+    }
+    actions.append(button('Cerrar', 'secondary', closeDialog));
     info.append(actions);
     layout.append(info);
     body.append(layout);
@@ -1207,7 +1559,7 @@
 
   // Piezas de interfaz que reutiliza la guía de reglas (js/rules.js).
   SM.UI = {
-    el, button, gemEl, cardEl, backEl,
+    el, button, gemEl, cardEl, backEl, itemEl,
     typeGroups: () => state.typeGroups,
     cards: () => (state.game ? [...state.game.cards.values()] : state.cards || []),
   };
