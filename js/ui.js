@@ -1887,8 +1887,6 @@
   }
 
   async function initBackgrounds() {
-    // Abierto con doble clic: la lista no se puede actualizar sola; se explica cómo abrirlo.
-    $('#bg-file-hint').hidden = location.protocol !== 'file:';
     renderBackgroundPicker();
     $('#bg-select').addEventListener('change', () => setBackground($('#bg-select').value));
     const wanted = savedBackgroundId();
