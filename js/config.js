@@ -77,7 +77,7 @@ SM.Config = Object.freeze({
     // El id no cambia (es el que queda guardado en cada navegador).
     { id: 'auto',       label: 'Ditto',     hint: 'automático',     num: '132' },
     { id: 'light',      label: 'Eevee',     hint: 'claro',          num: '133' },
-    { id: 'dark',       label: 'Arcanine',  hint: 'oscuro',         num: '059' },
+    { id: 'dark',       label: 'Arbok',     hint: 'oscuro',         num: '024' },
     { id: 'pokedex',    label: 'Voltorb',   hint: 'rojo y blanco',  num: '100' },
     { id: 'gengar',     label: 'Gengar',    hint: 'morado',         num: '094' },
     { id: 'forest',     label: 'Bulbasaur', hint: 'verde',          num: '001' },
