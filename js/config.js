@@ -6,7 +6,7 @@ SM.Config = Object.freeze({
   GEMS: ['ruby', 'sapphire', 'emerald', 'topaz', 'onyx'],
   WILD: 'amethyst',
   GEM_INFO: {
-    // img: sprite de pokébola (PokéSprite, licencia MIT, ver img/POKESPRITE-LICENSE.md).
+    // img: sprite de pokebola (PokéSprite, licencia MIT, ver img/POKESPRITE-LICENSE.md).
     // label: nombre que se muestra en todos los textos del juego.
     ruby:     { label: 'Poké Ball',   color: '#d6453b', ink: '#ffffff', img: 'img/balls/poke.png' },
     sapphire: { label: 'Great Ball',  color: '#2f74d0', ink: '#ffffff', img: 'img/balls/great.png' },
@@ -14,6 +14,15 @@ SM.Config = Object.freeze({
     topaz:    { label: 'Quick Ball',  color: '#f0c419', ink: '#3a2c00', img: 'img/balls/quick.png' },
     onyx:     { label: 'Heavy Ball',  color: '#4b4553', ink: '#ffffff', img: 'img/balls/heavy.png' },
     amethyst: { label: 'Master Ball', color: '#9a5bd3', ink: '#ffffff', img: 'img/balls/master.png' },
+  },
+
+  // Nombre en español de cada tipo, solo para mostrarlo. Por dentro (JSON, typeGems)
+  // los tipos siguen en inglés; un tipo que no esté aquí se muestra tal cual.
+  TYPE_LABELS: {
+    normal: 'Normal', fire: 'Fuego', water: 'Agua', grass: 'Planta', electric: 'Eléctrico',
+    ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno', ground: 'Tierra', flying: 'Volador',
+    psychic: 'Psíquico', bug: 'Bicho', rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragón',
+    dark: 'Siniestro', steel: 'Acero', fairy: 'Hada',
   },
 
   // Qué gema da cada tipo (se usa el primer tipo de la criatura).
@@ -103,8 +112,20 @@ SM.Config = Object.freeze({
   MAX_TOKENS: 10,
   MAX_RESERVED: 3,
   MIN_BANK_FOR_DOUBLE: 4,
+  MIN_PLAYERS: 2,
+  MAX_PLAYERS: 4,
+  // Según el número de jugadores.
   TOKENS_PER_GEM: { 2: 4, 3: 5, 4: 7 },
-  WILD_TOKENS: 5,
+  WILD_TOKENS: { 2: 5, 3: 5, 4: 7 },
+
+  // Equipos (2 contra 2, solo con 4 jugadores): juegan alternados (1 y 3 contra 2 y 4),
+  // suman los puntos de los dos y pueden pagar con las pokebolas del compañero
+  // (no con sus objetos ni con las bonificaciones de sus capturas).
+  TEAM_TARGET_POINTS: 30,
+  TEAMS: [
+    { label: 'Equipo A', color: '#e0533f' },
+    { label: 'Equipo B', color: '#2f74d0' },
+  ],
 
   // Pausa entre jugadas de la máquina, para poder seguirlas.
   AI_DELAY_MS: 1100,

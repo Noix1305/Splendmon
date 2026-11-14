@@ -5,9 +5,13 @@
 
   // En red: role es 'host' (ejecuta la partida) o 'guest' (envía jugadas y recibe el estado).
   // local es el jugador que se controla desde este equipo y se dibuja abajo.
+  // seatPrefs: lo elegido para los jugadores 2 a 4 en la pantalla inicial ({ type, name }).
+  // lobby (anfitrión): asientos de la sala y qué invitado ocupa cada uno.
+  // view: con varias personas en el mismo equipo, el jugador que se muestra abajo.
   const state = {
-    cards: null, typeGroups: C.DEFAULT_TYPE_GEMS, setup: null, game: null, selection: [], aiTimer: null,
-    net: null, role: null, local: 0,
+    cards: null, typeGroups: C.DEFAULT_TYPE_GEMS, setup: null, teams: false, game: null, selection: [], aiTimer: null,
+    net: null, role: null, local: 0, lobby: null, view: null,
+    seatPrefs: [],
     catalogTier: 'all',
     testMode: false,
   };
@@ -64,6 +68,12 @@
     return e;
   }
 
+  // Tipo en español para mostrar ("Bug" -> "Bicho"); si no se conoce, tal cual.
+  function typeLabel(type) {
+    return C.TYPE_LABELS[String(type).trim().toLowerCase()] || String(type);
+  }
+  const typeList = (types, sep) => types.map(typeLabel).join(sep);
+
   function initials(name) {
     return name.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase() || '?';
   }
@@ -98,14 +108,16 @@
     return controls(g.currentPlayer) ? g.currentPlayer : g.players[state.local];
   }
 
-  // Lo que falta de cada pokébola, después de bonificaciones y de las que tienes en mano.
+  // Lo que falta de cada pokebola, después de bonificaciones y de las que tienes en mano.
   // La Master Ball cuenta aparte: aquí no se usa como comodín para cubrir otros tipos.
+  // En equipos, cuentan también las pokebolas del compañero.
   function missingFor(p, card) {
     const g = state.game;
     const bonus = g.bonusOf(p);
+    const have = g.spendableTokens(p);
     const out = {};
-    C.GEMS.forEach(gem => { out[gem] = Math.max(0, (card.cost[gem] || 0) - bonus[gem] - p.tokens[gem]); });
-    out[C.WILD] = Math.max(0, (card.cost[C.WILD] || 0) - p.tokens[C.WILD]);
+    C.GEMS.forEach(gem => { out[gem] = Math.max(0, (card.cost[gem] || 0) - bonus[gem] - have[gem]); });
+    out[C.WILD] = Math.max(0, (card.cost[C.WILD] || 0) - have[C.WILD]);
     return out;
   }
 
@@ -121,7 +133,7 @@
     const bonus = el('span', 'card-bonus');
     for (let i = 0; i < card.bonus; i++) bonus.append(gemEl(card.gem, null, true));
     head.append(bonus);
-    // Evolución arriba al centro: miniatura de la criatura + pokébola con lo que pide.
+    // Evolución arriba al centro: miniatura de la criatura + pokebola con lo que pide.
     if (card.evolutions.length) {
       const n = card.evolutions.length;
       const thumbs = el('div', 'evo-thumbs' + (n > 2 ? ' many' : n === 2 ? ' two' : ''));
@@ -141,7 +153,7 @@
     }
     e.append(head, artEl(card), el('div', 'card-name', card.name));
 
-    // En partida: cuántas pokébolas te faltan de cada tipo (✓ si ya lo cubres).
+    // En partida: cuántas pokebolas te faltan de cada tipo (✓ si ya lo cubres).
     // Fuera de partida (catálogo en el inicio): el costo completo.
     const foot = el('div', 'card-foot');
     const cost = el('div', 'card-cost');
@@ -168,11 +180,11 @@
     return e;
   }
 
-  // ---------- Reverso de los mazos: una pokébola distinta por nivel
+  // ---------- Reverso de los mazos: una pokebola distinta por nivel
 
   const BACK_BALL = { '1': 'poke', '2': 'great', '3': 'ultra', rare: 'premier', legend: 'master' };
 
-  // Pokébola dibujada en SVG (nítida a cualquier tamaño). Los detalles van en la mitad de arriba.
+  // Pokebola dibujada en SVG (nítida a cualquier tamaño). Los detalles van en la mitad de arriba.
   function ballSvg(kind) {
     const top = { poke: '#e3262f', great: '#2f6fd6', ultra: '#26272c', premier: '#f7f7f7', master: '#7b3fb3' }[kind];
     const band = kind === 'premier' ? '#e3262f' : '#1b1b1f';
@@ -204,7 +216,7 @@
       e.append(el('span', 'back-count', count ? `${count} ${count === 1 ? 'carta' : 'cartas'}` : 'Vacío'));
       e.append(el('span', 'back-hint', 'Reservar oculta'));
     } else {
-      // Sin contador (reservas ocultas, guía): se guarda su espacio para que la pokébola quede centrada.
+      // Sin contador (reservas ocultas, guía): se guarda su espacio para que la pokebola quede centrada.
       const spacer = el('span', 'back-count', '·');
       spacer.style.visibility = 'hidden';
       e.append(spacer);
@@ -244,53 +256,159 @@
     });
 
     const sample = $('#use-sample');
-    if (window.SAMPLE_MONSTERS) sample.addEventListener('click', () => loadData(window.SAMPLE_MONSTERS, 'criaturas de ejemplo'));
+    if (window.SAMPLE_MONSTERS) sample.addEventListener('click', () => loadData(window.SAMPLE_MONSTERS, SAMPLE_LABEL, 'sample'));
     else sample.hidden = true;
 
-    const type = $('#p2-type');
-    const name2 = $('#p2-name');
-    type.addEventListener('change', () => {
-      if (name2.value === 'Máquina' || name2.value === 'Jugador 2') name2.value = type.value === 'ai' ? 'Máquina' : 'Jugador 2';
-      name2.disabled = type.value === 'online';
-      $('#start').textContent = type.value === 'online' ? 'Crear sala' : 'Empezar partida';
-    });
+    $('#player-count').addEventListener('change', renderSeats);
+    $('#game-mode').addEventListener('change', renderSeats);
+    renderSeats();
 
     initPlayerName();
-    $('#start').addEventListener('click', startGame);
+    document.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', startGame));
     $('#join').addEventListener('click', joinRoom);
     $('#join-code').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
     $('#quit').addEventListener('click', () => {
-      const msg = state.role ? '¿Salir de la partida? Se cortará la conexión con el otro jugador.' : '¿Salir de la partida?';
+      const msg = state.role ? '¿Salir de la partida? Se cortará la conexión con los demás jugadores.' : '¿Salir de la partida?';
       if (confirm(msg)) backToSetup();
     });
 
+    initPanelDialogs();
+    initFooter();
     initCatalog();
     initThemes();
     initBackgrounds();
     renderLegend();
 
+    // Al abrir se cargan los Pokémon de ejemplo, para poder empezar de inmediato.
+    if (window.SAMPLE_MONSTERS) loadData(window.SAMPLE_MONSTERS, SAMPLE_LABEL, 'sample');
+
     // Servido desde un servidor web, intenta cargar monsters.json junto a la página.
+    // Reemplaza a los de ejemplo, pero no a un archivo que el jugador ya haya elegido.
     if (location.protocol.startsWith('http')) {
       fetch('monsters.json')
         .then(r => (r.ok ? r.json() : null))
-        .then(json => { if (json && !state.cards) loadData(json, 'monsters.json'); })
+        .then(json => { if (json && (!state.cards || state.cardsFrom === 'sample')) loadData(json, 'monsters.json', 'server'); })
         .catch(() => {});
     }
+  }
+
+  const SAMPLE_LABEL = 'Pokémon de ejemplo';
+
+  // Los dos botones de empezar (arriba, junto a Estilo, y al final) siempre iguales.
+  function setStart({ disabled, text }) {
+    document.querySelectorAll('[data-start]').forEach(b => {
+      if (disabled != null) b.disabled = disabled;
+      if (text != null) b.textContent = text;
+    });
+  }
+
+  // Ventanas «Estilo» y «Pokebolas»: se abren con su botón y se cierran con «Cerrar»,
+  // con Esc o con un clic fuera del contenido.
+  function initPanelDialogs() {
+    [['#style-open', '#style-dialog'], ['#legend-open', '#legend-dialog'], ['#format-open', '#format-dialog'],
+      ['#join-open', '#join-dialog']].forEach(([btn, sel]) => {
+      const dlg = $(sel);
+      $(btn).addEventListener('click', () => { if (!dlg.open) dlg.showModal(); });
+      dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
+      dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+    });
+    initFormatHelp();
+  }
+
+  // ---------- Ayuda del formato del .json
+
+  // Ejemplo mínimo y completo: una cadena de 3 etapas (Niveles 1, 2 y 3), un Pokémon sin
+  // evolución (Raros) y un legendario. Es lo que se muestra y lo que se descarga.
+  const FORMAT_EXAMPLE = {
+    monsters: [
+      {
+        id: 1, num: '001', name: 'Bulbasaur', img: 'img/pokemon/001.png',
+        type: ['Grass', 'Poison'], height: '0.71 m', weight: '6.9 kg',
+        weaknesses: ['Fire', 'Ice', 'Flying', 'Psychic'],
+        next_evolution: [{ num: '002', name: 'Ivysaur' }, { num: '003', name: 'Venusaur' }],
+      },
+      {
+        id: 2, num: '002', name: 'Ivysaur', img: 'img/pokemon/002.png',
+        type: ['Grass', 'Poison'], height: '0.99 m', weight: '13.0 kg',
+        weaknesses: ['Fire', 'Ice', 'Flying', 'Psychic'],
+        next_evolution: [{ num: '003', name: 'Venusaur' }],
+      },
+      {
+        id: 3, num: '003', name: 'Venusaur', img: 'img/pokemon/003.png',
+        type: ['Grass', 'Poison'], height: '2.01 m', weight: '100.0 kg',
+        weaknesses: ['Fire', 'Ice', 'Flying', 'Psychic'],
+      },
+      {
+        id: 131, num: '131', name: 'Lapras', img: 'img/pokemon/131.png',
+        type: ['Water', 'Ice'], height: '2.49 m', weight: '220.0 kg',
+        weaknesses: ['Electric', 'Fighting', 'Grass', 'Rock'],
+        legendary: false,
+      },
+      {
+        id: 150, num: '150', name: 'Mewtwo', img: 'img/pokemon/150.png',
+        type: ['Psychic'], height: '2.01 m', weight: '122.0 kg',
+        weaknesses: ['Bug', 'Ghost', 'Dark'],
+        legendary: true,
+      },
+    ],
+  };
+
+  // JSON con sangría, pero con las listas cortas en una sola línea (más fácil de leer).
+  function formatExampleText() {
+    return JSON.stringify(FORMAT_EXAMPLE, null, 2)
+      .replace(/\[\s+("[^"\n]*"(?:,\s+"[^"\n]*")*)\s+\]/g, (m, items) => `[${items.replace(/,\s+/g, ', ')}]`)
+      .replace(/\{\s+("num": "[^"]*"),\s+("name": "[^"]*")\s+\}/g, '{ $1, $2 }')
+      .replace(/\[\s+(\{ "num"[^\]]*?\})\s+\]/g, (m, items) => `[${items.replace(/\},\s+\{/g, '}, {')}]`);
+  }
+
+  function initFormatHelp() {
+    const text = formatExampleText();
+    $('#format-example').textContent = text;
+    $('#format-download').addEventListener('click', () => {
+      const url = URL.createObjectURL(new Blob([text + '\n'], { type: 'application/json' }));
+      const a = el('a');
+      a.href = url;
+      a.download = 'pokemon-ejemplo.json';
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    const copied = $('#format-copied');
+    $('#format-copy').hidden = !navigator.clipboard;
+    $('#format-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(text).then(() => {
+        copied.hidden = false;
+        setTimeout(() => { copied.hidden = true; }, 2000);
+      }).catch(() => {});
+    });
+  }
+
+  // El aviso legal va fijo abajo. Su altura (cambia con el ancho de la ventana) se guarda en
+  // --footer-h para que la página deje ese espacio libre y nada quede tapado.
+  function initFooter() {
+    const footer = $('#legal');
+    const update = () => document.documentElement.style.setProperty('--footer-h', footer.offsetHeight + 'px');
+    update();
+    if (window.ResizeObserver) new ResizeObserver(update).observe(footer);
+    else window.addEventListener('resize', update);
   }
 
   function readFile(file) {
     const reader = new FileReader();
     reader.onload = () => {
-      try { loadData(JSON.parse(reader.result), file.name); }
+      try { loadData(JSON.parse(reader.result), file.name, 'file'); }
       catch (err) { showLoadError('No se pudo leer el JSON: ' + err.message); }
     };
     reader.readAsText(file);
   }
 
-  function loadData(json, source) {
+  // from: 'sample' (los de ejemplo), 'file' (elegido por el jugador) o 'server' (monsters.json).
+  function loadData(json, source, from) {
     try {
       const result = SM.Cards.build(json);
       state.cards = result.cards;
+      state.cardsFrom = from;
       state.typeGroups = result.typeGroups;
       renderLegend();
       const box = $('#data-summary');
@@ -300,7 +418,7 @@
       C.TIERS.forEach(t => list.append(el('li', null, `${C.TIER_LABELS[t]}: ${result.cards.filter(c => c.tier === t).length}`)));
       box.append(list);
       result.warnings.forEach(w => box.append(el('p', 'warn', w)));
-      $('#start').disabled = !!state.role;
+      setStart({ disabled: !!state.role });
       $('#catalog-open').disabled = false;
     } catch (err) {
       showLoadError(err.message);
@@ -311,7 +429,9 @@
     const box = $('#data-summary');
     box.textContent = '';
     box.append(el('p', 'warn', msg));
-    if (!state.cards) $('#start').disabled = true;
+    box.append(button('Ver cómo debe ser el archivo', 'secondary small', () => $('#format-dialog').showModal()));
+    if (state.cards) box.append(el('p', 'muted', 'Se siguen usando los Pokémon que ya estaban cargados.'));
+    else setStart({ disabled: true });
   }
 
   function renderLegend() {
@@ -319,7 +439,7 @@
     box.textContent = '';
     C.GEMS.forEach(g => {
       const row = el('div', 'legend-row');
-      row.append(gemEl(g), el('strong', null, C.GEM_INFO[g].label), el('span', 'muted', state.typeGroups[g].join(', ') || '—'));
+      row.append(gemEl(g), el('strong', null, C.GEM_INFO[g].label), el('span', 'muted', typeList(state.typeGroups[g], ', ') || '—'));
       box.append(row);
     });
     const wild = el('div', 'legend-row');
@@ -327,24 +447,126 @@
     box.append(wild);
   }
 
+  // ---------- Jugadores 2 a 4: quién los controla
+
+  const SEAT_TYPES = [
+    ['ai', 'La máquina'],
+    ['human', 'Otra persona, en este mismo equipo'],
+    ['online', 'Otra persona, por internet'],
+  ];
+
+  function teamTag(team) {
+    const tag = el('span', 'team-tag', C.TEAMS[team].label);
+    tag.style.setProperty('--team', C.TEAMS[team].color);
+    return tag;
+  }
+
+  function seatPref(i) {
+    if (!state.seatPrefs[i]) state.seatPrefs[i] = { type: 'ai', name: '' };
+    return state.seatPrefs[i];
+  }
+
+  // Nombre si no se escribe ninguno. Con una sola máquina se llama «Máquina».
+  function defaultSeatName(i, count) {
+    const pref = seatPref(i);
+    if (pref.type === 'ai') {
+      const machines = Array.from({ length: count - 1 }, (_, k) => seatPref(k + 1)).filter(s => s.type === 'ai').length;
+      return machines > 1 ? `Máquina ${i + 1}` : 'Máquina';
+    }
+    return `Jugador ${i + 1}`;
+  }
+
+  function renderSeats() {
+    const count = Number($('#player-count').value);
+    const mode = $('#game-mode');
+    mode.querySelector('option[value="teams"]').disabled = count !== 4;
+    if (count !== 4 && mode.value === 'teams') mode.value = 'solo';
+    const teams = mode.value === 'teams';
+
+    const note = $('#mode-note');
+    note.textContent = '';
+    if (teams) {
+      note.append(teamTag(0), ` Tú y el jugador 3 · `, teamTag(1), ' Jugadores 2 y 4. ',
+        `Cada equipo suma los puntos de sus dos jugadores (meta: ${C.TEAM_TARGET_POINTS}) y puede pagar con las pokebolas del compañero, pero no usar sus objetos.`);
+    }
+    note.append(`${teams ? ' ' : ''}Con ${count} jugadores hay ${C.TOKENS_PER_GEM[count]} pokebolas de cada tipo y ${C.WILD_TOKENS[count]} ${C.GEM_INFO[C.WILD].label}.`);
+
+    const box = $('#seats');
+    box.textContent = '';
+    for (let i = 1; i < count; i++) {
+      const pref = seatPref(i);
+      const row = el('div', 'seat');
+      const label = el('span', 'seat-label', `Jugador ${i + 1}`);
+      if (teams) label.append(' ', teamTag(i % 2));
+      const type = el('select');
+      type.setAttribute('aria-label', `Quién controla al jugador ${i + 1}`);
+      SEAT_TYPES.forEach(([value, text]) => {
+        const opt = el('option', null, text);
+        opt.value = value;
+        type.append(opt);
+      });
+      type.value = pref.type;
+      type.addEventListener('change', () => { pref.type = type.value; renderSeats(); });
+      const name = el('input');
+      name.maxLength = 20;
+      name.setAttribute('aria-label', `Nombre del jugador ${i + 1}`);
+      if (pref.type === 'online') {
+        name.disabled = true;
+        name.value = '';
+        name.placeholder = 'Lo escribe quien se una';
+      } else {
+        name.value = pref.name;
+        name.placeholder = defaultSeatName(i, count);
+        name.addEventListener('input', () => { pref.name = name.value; });
+      }
+      row.append(label, type, name);
+      box.append(row);
+    }
+    const online = Array.from({ length: count - 1 }, (_, k) => seatPref(k + 1)).some(s => s.type === 'online');
+    setStart({ text: online ? 'Crear sala' : 'Empezar partida' });
+    lockSetup(!!state.role);
+  }
+
+  // Lo elegido en la pantalla inicial: un asiento por jugador (el 0 eres tú).
+  // kind: 'local' (este equipo), 'ai', 'human' (mismo equipo) u 'online' (invitado por internet).
+  function readSetup() {
+    const count = Number($('#player-count').value);
+    const seats = [{ name: $('#p1-name').value.trim() || 'Jugador 1', ai: false, kind: 'local' }];
+    for (let i = 1; i < count; i++) {
+      const pref = seatPref(i);
+      const name = pref.type === 'online' ? `Jugador ${i + 1}` : (pref.name.trim() || defaultSeatName(i, count));
+      seats.push({ name: uniqueName(name, seats.map(s => s.name)), ai: pref.type === 'ai', kind: pref.type });
+    }
+    return { seats, teams: count === 4 && $('#game-mode').value === 'teams' };
+  }
+
+  // Dos jugadores con el mismo nombre confunden el registro: al repetido se le agrega un número.
+  function uniqueName(name, taken) {
+    if (!taken.includes(name)) return name;
+    let n = 2;
+    while (taken.includes(`${name} (${n})`)) n++;
+    return `${name} (${n})`;
+  }
+
   function startGame() {
-    if ($('#p2-type').value === 'online') { hostRoom(); return; }
+    const cfg = readSetup();
+    if (cfg.seats.some(s => s.kind === 'online')) { hostRoom(cfg); return; }
     leaveNetwork();
     state.testMode = $('#test-mode').checked;
-    state.setup = [
-      { name: $('#p1-name').value.trim() || 'Jugador 1', ai: false },
-      { name: $('#p2-name').value.trim() || 'Jugador 2', ai: $('#p2-type').value === 'ai' },
-    ];
+    state.setup = cfg.seats.map(s => ({ name: s.name, ai: s.ai }));
+    state.teams = cfg.teams;
     newGame();
   }
 
-  // En red, solo el anfitrión crea partidas (también la revancha) y se las envía al invitado.
+  // En red, solo el anfitrión crea partidas (también la revancha) y se las envía a cada
+  // invitado junto con el asiento que ocupa.
   function newGame() {
-    const game = new SM.Game(state.cards, state.setup);
+    const game = new SM.Game(state.cards, state.setup, { teams: state.teams });
     if (state.role === 'host') {
       const link = state.net;
       game.onChange(() => link.send({ t: 'state', s: game.snapshot() }));
-      link.send({ t: 'start', cards: state.cards, s: game.snapshot() });
+      const snap = game.snapshot();
+      state.lobby.seatOf.forEach((seat, id) => link.send({ t: 'start', cards: state.cards, s: snap, seat }, id));
     }
     showGame(game);
   }
@@ -353,8 +575,9 @@
     clearTimeout(state.aiTimer);
     state.aiTimer = null;
     state.selection = [];
+    state.view = null;
     if ($('#card-dialog').open) closeDialog();
-    if ($('#catalog-dialog').open) $('#catalog-dialog').close();
+    ['#catalog-dialog', '#join-dialog'].forEach(sel => { if ($(sel).open) $(sel).close(); });
     state.game = game;
     game.onChange(() => { state.selection = []; state.bike = null; render(); });
     $('#setup').hidden = true;
@@ -393,9 +616,14 @@
   }
 
   function lockSetup(locked) {
-    $('#start').disabled = locked || !state.cards;
-    $('#p2-type').disabled = locked;
+    setStart({ disabled: locked || !state.cards });
     $('#join').disabled = locked;
+    ['#player-count', '#game-mode'].forEach(sel => { $(sel).disabled = locked; });
+    document.querySelectorAll('#seats select, #seats input').forEach(n => {
+      if (locked) n.disabled = true;
+      else if (n.tagName === 'SELECT') n.disabled = false;
+      else n.disabled = n.placeholder === 'Lo escribe quien se una';
+    });
   }
 
   function netAvailable(sel) {
@@ -404,42 +632,95 @@
     return false;
   }
 
-  function hostRoom() {
+  // ---------- Sala en red: anfitrión
+
+  // Asientos por internet que todavía no ocupa nadie.
+  function freeSeats() {
+    const lobby = state.lobby;
+    const taken = new Set(lobby.seatOf.values());
+    return lobby.cfg.seats.map((s, i) => i).filter(i => lobby.cfg.seats[i].kind === 'online' && !taken.has(i));
+  }
+
+  function lobbyStatus() {
+    const lobby = state.lobby;
+    if (!lobby || !lobby.code) return;
+    const total = lobby.cfg.seats.filter(s => s.kind === 'online').length;
+    const joined = lobby.seatOf.size;
+    const names = [...lobby.seatOf.values()].map(i => lobby.cfg.seats[i].name);
+    const who = names.length ? ` Ya están: ${names.join(', ')}.` : '';
+    const text = total === 1
+      ? 'Pásale este código a la otra persona. Esperando a que se una…'
+      : `Pásale este código a las otras ${total} personas. Se unieron ${joined} de ${total}.${who}`;
+    netStatus('#host-status', text, { code: lobby.code, cancel: true });
+    state.net.send({ t: 'lobby', joined, total, names });
+  }
+
+  function hostRoom(cfg) {
     if (!netAvailable('#host-status')) return;
     leaveNetwork();
-    const myName = $('#p1-name').value.trim() || 'Jugador 1';
+    const total = cfg.seats.filter(s => s.kind === 'online').length;
     const link = new SM.Net.Link({
       onReady: code => {
         if (state.net !== link) return;
-        netStatus('#host-status', 'Pásale este código a la otra persona. Esperando a que se una…', { code, cancel: true });
+        state.lobby.code = code;
+        lobbyStatus();
       },
-      onMessage: msg => hostMessage(link, msg, myName),
-      onClose: () => connectionLost(link),
+      onMessage: (msg, id) => hostMessage(link, msg, id),
+      onGuestLeft: id => guestLeft(link, id),
       onError: text => connectionLost(link, text),
     });
     state.net = link;
     state.role = 'host';
     state.local = 0;
+    state.lobby = { cfg, seatOf: new Map(), code: null };
+    state.testMode = false;
     lockSetup(true);
     netStatus('#host-status', 'Creando sala…', { cancel: true });
-    link.host();
+    link.host(total);
   }
 
-  function hostMessage(link, msg, myName) {
+  function hostMessage(link, msg, id) {
     if (state.net !== link || !msg) return;
-    if (msg.t === 'hello' && !state.game) {
-      let guest = String(msg.name || '').trim().slice(0, 20) || 'Jugador 2';
-      if (guest === myName) guest += ' (2)';
-      state.setup = [{ name: myName, ai: false }, { name: guest, ai: false }];
-      newGame();
+    const lobby = state.lobby;
+    if (msg.t === 'hello') {
+      const seat = freeSeats()[0];
+      if (state.game || seat == null || lobby.seatOf.has(id)) { link.send({ t: 'full' }, id); link.kick(id); return; }
+      const taken = new Set(lobby.seatOf.values());
+      const others = lobby.cfg.seats.filter((s, i) => s.kind !== 'online' || taken.has(i)).map(s => s.name);
+      lobby.cfg.seats[seat].name = uniqueName(String(msg.name || '').trim().slice(0, 20) || `Jugador ${seat + 1}`, others);
+      lobby.seatOf.set(id, seat);
+      lobbyStatus();
+      if (!freeSeats().length) {
+        state.setup = lobby.cfg.seats.map(s => ({ name: s.name, ai: s.ai }));
+        state.teams = lobby.cfg.teams;
+        newGame();
+      }
     } else if (msg.t === 'act') {
-      // El anfitrión vuelve a comprobar todo: el juego rechaza lo que no sea legal.
+      // El anfitrión vuelve a comprobar todo: solo juega quien tiene el turno y el juego
+      // rechaza lo que no sea legal.
       const g = state.game;
-      if (!g || g.current !== 1 || !NET_ACTIONS.includes(msg.m)) return;
+      if (!g || g.current !== lobby.seatOf.get(id) || !NET_ACTIONS.includes(msg.m)) return;
       const args = msg.m === 'pass' ? [] : (Array.isArray(msg.args) ? msg.args : []);
       try { g[msg.m](...args); } catch (err) { /* jugada mal formada: se ignora */ }
     }
   }
+
+  // Si alguien se va antes de empezar, su asiento queda libre. Con la partida en curso, termina.
+  function guestLeft(link, id) {
+    if (state.net !== link || !state.lobby) return;
+    const seat = state.lobby.seatOf.get(id);
+    state.lobby.seatOf.delete(id);
+    if (seat == null) return;
+    const name = state.lobby.cfg.seats[seat].name;
+    if (state.game) {
+      connectionLost(link, `${name} se desconectó. La partida terminó.`);
+      return;
+    }
+    state.lobby.cfg.seats[seat].name = `Jugador ${seat + 1}`;
+    lobbyStatus();
+  }
+
+  // ---------- Sala en red: invitado
 
   function joinRoom() {
     if (!netAvailable('#join-status')) return;
@@ -470,7 +751,15 @@
 
   function guestMessage(link, msg) {
     if (state.net !== link || !msg) return;
-    if (msg.t === 'start') {
+    if (msg.t === 'lobby' && !state.game) {
+      const missing = msg.total - msg.joined;
+      netStatus('#join-status', missing > 0
+        ? `Conectado. Faltan ${missing} jugador${missing > 1 ? 'es' : ''} por unirse…`
+        : 'Conectado. Empezando…', { cancel: true });
+    } else if (msg.t === 'full') {
+      connectionLost(link, 'Esa sala ya está completa o la partida ya empezó.');
+    } else if (msg.t === 'start') {
+      state.local = msg.seat;
       const game = SM.Game.fromSnapshot(msg.cards, msg.s);
       // Las jugadas del invitado se envían al anfitrión; el resultado vuelve como 'state'.
       NET_ACTIONS.forEach(m => {
@@ -487,6 +776,7 @@
     state.net = null;
     state.role = null;
     state.local = 0;
+    state.lobby = null;
     if (link) link.close();
     netStatus('#host-status', '');
     netStatus('#join-status', '');
@@ -498,7 +788,9 @@
     const sel = state.role === 'host' ? '#host-status' : '#join-status';
     const wasPlaying = !!state.game;
     backToSetup();
-    netStatus(sel, text || (wasPlaying ? 'Se perdió la conexión con el otro jugador. La partida terminó.' : 'Se cerró la conexión.'), { cls: 'warn' });
+    netStatus(sel, text || (wasPlaying ? 'Se perdió la conexión. La partida terminó.' : 'Se cerró la conexión.'), { cls: 'warn' });
+    // El aviso del invitado está en la ventana «Unirse»: se abre para que se vea.
+    if (sel === '#join-status' && !$('#join-dialog').open) $('#join-dialog').showModal();
   }
 
   // ---------- Partida
@@ -513,13 +805,47 @@
     return !!g && g.phase === 'action' && controls(g.currentPlayer);
   }
 
+  // Jugador que se muestra abajo (a la izquierda). En red y contra máquinas, siempre tú;
+  // con varias personas en el mismo equipo, la persona de turno.
+  function bottomIndex() {
+    const g = state.game;
+    if (state.role) return state.local;
+    const me = meIndex();
+    if (me != null) return me;
+    if (controls(g.currentPlayer)) state.view = g.current;
+    if (state.view == null) state.view = Math.max(0, g.players.findIndex(p => !p.ai));
+    return state.view;
+  }
+
+  // Si se ven las cartas reservadas y los objetos de un jugador desde esta pantalla.
+  // En red: los tuyos y los de tu compañero. En el mismo equipo: los de quien juega
+  // (y su compañero), o los de todos los humanos si hay máquinas.
+  function canSee(p) {
+    const g = state.game;
+    if (state.role) {
+      const me = g.players[state.local];
+      return p === me || (g.teams && p.team === me.team);
+    }
+    if (p.ai) return false;
+    return p === g.currentPlayer || g.players.some(o => o.ai) || (g.teams && p.team === g.currentPlayer.team);
+  }
+
   function render() {
     if (!state.game) return;
     const before = SM.Fx.capture();
     const players = state.game.players;
+    const bottom = bottomIndex();
     renderStatus();
-    renderPlayer($('#area-p2'), players[1 - state.local]);
-    renderPlayer($('#area-p1'), players[state.local]);
+    renderPlayer($('#area-p1'), players[bottom]);
+    // Rivales (y compañero) en orden de turno a partir de ti.
+    const others = $('#opponents');
+    others.textContent = '';
+    others.classList.toggle('many', players.length > 2);
+    for (let k = 1; k < players.length; k++) {
+      const box = el('div', 'player-area');
+      others.append(box);
+      renderPlayer(box, players[(bottom + k) % players.length]);
+    }
     renderBank();
     renderMarket();
     renderPrompt();
@@ -537,7 +863,16 @@
     box.append(el('span', null, g.phase === 'over' ? 'Partida terminada'
       : isMe(g.currentPlayer) ? 'Tu turno' : `Turno de ${g.currentPlayer.name}`));
     if (g.finalRound && g.phase !== 'over') box.append(el('span', 'badge', 'Última ronda'));
-    if (state.role) box.append(el('span', 'muted', `En red · tu oponente te ve como «${g.players[state.local].name}»`));
+    if (g.teams) {
+      const score = el('span', 'team-score');
+      [0, 1].forEach(t => {
+        const s = el('span', 'team-score-item');
+        s.append(teamTag(t), el('b', null, `${g.teamPoints(t)} / ${C.TEAM_TARGET_POINTS}`));
+        score.append(s);
+      });
+      box.append(score);
+    }
+    if (state.role) box.append(el('span', 'muted', `En red · los demás te ven como «${g.players[state.local].name}»`));
   }
 
   function stat(label, value) {
@@ -551,16 +886,24 @@
     box.textContent = '';
     box.dataset.player = p.index;
     box.classList.toggle('active', g.currentPlayer === p && g.phase !== 'over');
+    box.classList.toggle('teamed', p.team != null);
+    if (p.team != null) box.style.setProperty('--team', C.TEAMS[p.team].color);
+    else box.style.removeProperty('--team');
 
     const head = el('div', 'player-head');
     const aiTag = p.ai && !/máquina/i.test(p.name) ? ' (máquina)' : '';
-    head.append(el('h2', null, displayName(p) + aiTag));
+    const title = el('h2', null, displayName(p) + aiTag);
+    if (p.team != null) {
+      title.append(' ', teamTag(p.team));
+      if (meIndex() != null && g.partnerOf(p) === g.players[meIndex()]) title.append(el('span', 'partner-note', 'tu compañero'));
+    }
+    head.append(title);
     const stats = el('div', 'player-stats');
-    const points = stat('Puntos', `${g.pointsOf(p)} / ${C.TARGET_POINTS}`);
+    const points = stat('Puntos', g.teams ? String(g.pointsOf(p)) : `${g.pointsOf(p)} / ${C.TARGET_POINTS}`);
     points.classList.add('stat-points');
     stats.append(
       points,
-      stat('Pokébolas', `${g.tokenCount(p)} / ${C.MAX_TOKENS}`),
+      stat('Pokebolas', `${g.tokenCount(p)} / ${C.MAX_TOKENS}`),
       stat('Evoluciones', p.under.length),
       stat('Reservas', `${p.reserved.length} / ${C.MAX_RESERVED}`),
     );
@@ -568,7 +911,7 @@
     box.append(head);
 
     const body = el('div', 'player-body');
-    // Recuento por pokébola: en mano, generadas por tus capturas (permanentes) y total.
+    // Recuento por pokebola: en mano, generadas por tus capturas (permanentes) y total.
     const gems = el('div', 'player-gems ball-table');
     const bonus = g.bonusOf(p);
     const discarding = g.phase === 'discard' && g.currentPlayer === p && controls(p);
@@ -594,8 +937,8 @@
         gems.append(el('span', 'bt-cell ' + cls + (v == null || v === 0 ? ' zero' : ''), v == null ? '—' : String(v)));
       });
     };
-    row('En mano', 'hand', gem => p.tokens[gem], 'Pokébolas que tienes ahora (se gastan al capturar).');
-    row('Capturas', 'gen', gem => (gem === C.WILD ? null : bonus[gem]), 'Pokébolas que generan tus Pokémon capturados en cada captura (permanentes).');
+    row('En mano', 'hand', gem => p.tokens[gem], 'Pokebolas que tienes ahora (se gastan al capturar).');
+    row('Capturas', 'gen', gem => (gem === C.WILD ? null : bonus[gem]), 'Pokebolas que generan tus Pokémon capturados en cada captura (permanentes).');
     row('Total', 'total', gem => p.tokens[gem] + (gem === C.WILD ? 0 : bonus[gem]), 'Lo que puedes pagar de cada tipo.');
     body.append(gems);
 
@@ -611,9 +954,7 @@
 
     if (p.reserved.length) {
       const reserved = el('div', 'reserved');
-      const showFace = state.role
-        ? p.index === state.local
-        : !p.ai && (p === g.currentPlayer || g.players.some(o => o.ai));
+      const showFace = canSee(p);
       p.reserved.forEach(c => {
         if (!showFace) {
           const back = backEl(c.tier);
@@ -629,14 +970,14 @@
     box.append(body);
   }
 
-  // Pokébolas extra que da la Bicicleta activada (0 si no).
+  // Pokebolas extra que da la Bicicleta activada (0 si no).
   function bikeExtra() {
     const g = state.game;
     const inst = state.bike && g.ownedItem(g.currentPlayer, state.bike, 'take');
     return inst ? g.itemDef(inst).extra : 0;
   }
 
-  // Se puede agregar esta pokébola a la selección (mismas reglas que el juego).
+  // Se puede agregar esta pokebola a la selección (mismas reglas que el juego).
   function canAddGem(gem) {
     const g = state.game;
     const sel = state.selection;
@@ -658,7 +999,7 @@
     const g = state.game;
     const box = $('#bank');
     box.textContent = '';
-    box.append(el('h3', null, 'Pokébolas disponibles'));
+    box.append(el('h3', null, 'Pokebolas disponibles'));
     const active = canAct();
     const stacks = el('div', 'bank-stacks');
     const sel = state.selection;
@@ -679,7 +1020,7 @@
       const opts = bikeExtra() ? { bike: state.bike } : {};
       const check = g.checkTake(state.selection, opts);
       const bar = el('div', 'take-bar');
-      bar.append(button('Tomar pokébolas', 'primary', () => g.takeTokens(state.selection.slice(), opts), !check.ok));
+      bar.append(button('Tomar pokebolas', 'primary', () => g.takeTokens(state.selection.slice(), opts), !check.ok));
       // Bicicleta: se activa aquí y permite tomar 1 más.
       const bike = g.currentPlayer.items.find(i => g.itemDef(i).use === 'take');
       if (bike) {
@@ -697,8 +1038,8 @@
       const hint = state.selection.length
         ? (check.ok ? 'Listo para tomar.' : check.reason)
         : bikeExtra()
-          ? `Con Bicicleta: 4 pokébolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, 2 iguales y 1 distinta.`
-          : `Puedes elegir 3 pokébolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, puedes elegir 2 iguales.`;
+          ? `Con Bicicleta: 4 pokebolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, 2 iguales y 1 distinta.`
+          : `Puedes elegir 3 pokebolas distintas o, si quedan mínimo ${C.MIN_BANK_FOR_DOUBLE} de ese tipo, puedes elegir 2 iguales.`;
       box.append(el('p', 'hint', hint));
     }
   }
@@ -801,9 +1142,11 @@
 
     if (where.browse) {
       // Desde el catálogo: solo información.
-      info.append(el('p', 'muted', `Cuesta ${def.price} pokébola${def.price > 1 ? 's' : ''}; los tipos cambian en cada partida. Se compra en la tienda de la mesa.`));
+      info.append(el('p', 'muted', `Cuesta ${def.price} pokebola${def.price > 1 ? 's' : ''}; los tipos cambian en cada partida. Se compra en la tienda de la mesa.`));
     } else if (where.slot != null) {
-      info.append(el('p', 'muted', 'Se paga con pokébolas de tu mano (las de tus capturas no descuentan). La Master Ball sirve de comodín. Comprar es tu acción del turno.'));
+      const helper = g.partnerOf(g.currentPlayer);
+      info.append(el('p', 'muted', 'Se paga con pokebolas de tu mano' + (helper ? ` (y, si faltan, de la de ${helper.name})` : '')
+        + '; las de tus capturas no descuentan. La Master Ball sirve de comodín. Comprar es tu acción del turno.'));
       if (canAct()) {
         const check = g.checkBuyItem(where.slot);
         if (check.ok) info.append(paymentEl(check.pay));
@@ -820,7 +1163,7 @@
       const how = {
         evolve: 'Se usa al final de tu turno: cuando puedas evolucionar con él, aparecerá la opción.',
         capture: 'Se usa al capturar: abre un Pokémon y elige «Capturar con Cupón».',
-        take: 'Se usa al tomar pokébolas: activa «Usar Bicicleta» junto al botón de tomar.',
+        take: 'Se usa al tomar pokebolas: activa «Usar Bicicleta» junto al botón de tomar.',
         reserve: 'Se usa al reservar: toca un mazo de Nivel 1, 2 o 3 y elige «Usar Lupa».',
         passive: 'Funciona solo.',
         market: 'Se usa desde una carta de la mesa: ábrela y elige «Cambiar con Ticket Barco».',
@@ -860,7 +1203,7 @@
       body.textContent = '';
       const info = el('div', 'dialog-info swap');
       info.append(el('h2', null, `${def.icon} ${def.name}`));
-      info.append(el('p', 'muted', `Elige hasta ${def.max} pokébolas para dar y la misma cantidad para recibir. Toca una elegida para quitarla.`));
+      info.append(el('p', 'muted', `Elige hasta ${def.max} pokebolas para dar y la misma cantidad para recibir. Toca una elegida para quitarla.`));
       const rowOf = (label, list, from) => {
         const r = el('div', 'swap-row');
         r.append(el('b', null, label));
@@ -894,7 +1237,7 @@
     if (!$('#card-dialog').open) $('#card-dialog').showModal();
   }
 
-  // Pepita: elegir las pokébolas que recibes (se pueden repetir).
+  // Pepita: elegir las pokebolas que recibes (se pueden repetir).
   function openNugget(inst) {
     const g = state.game;
     const def = SM.Items.def(inst.id);
@@ -905,7 +1248,7 @@
       body.textContent = '';
       const info = el('div', 'dialog-info swap');
       info.append(el('h2', null, `${def.icon} ${def.name}`));
-      info.append(el('p', 'muted', `Elige ${want} pokébola(s) de las disponibles. Puedes repetir. Toca una elegida para quitar una.`));
+      info.append(el('p', 'muted', `Elige ${want} pokebola(s) de las disponibles. Puedes repetir. Toca una elegida para quitar una.`));
       const r = el('div', 'swap-row');
       C.GEMS.forEach(gem => {
         const n = take.filter(x => x === gem).length;
@@ -942,7 +1285,7 @@
     const box = el('div', 'player-items');
     box.append(el('span', 'bt-label', `Objetos ${p.items.length} / ${g.itemLimit(p)}`));
     const row = el('div', 'player-items-row');
-    const showFace = state.role ? p.index === state.local : !p.ai && (p === g.currentPlayer || g.players.some(o => o.ai));
+    const showFace = canSee(p);
     p.items.forEach(inst => row.append(showFace
       ? itemEl(inst, { size: 'small', showCost: false, onClick: () => openItem(inst, { owner: p }) })
       : itemBackEl()));
@@ -974,7 +1317,7 @@
     }
 
     if (g.phase === 'action') {
-      box.append(el('p', null, `${isMe(p) ? 'Tu turno' : p.name}: toma pokébolas, reserva una carta o captura un Pokémon. Los que tienen la etiqueta «¡Captúralo!» ya los puedes capturar.`));
+      box.append(el('p', null, `${isMe(p) ? 'Tu turno' : p.name}: toma pokebolas, reserva una carta o captura un Pokémon. Los que tienen la etiqueta «¡Captúralo!» ya los puedes capturar.`));
       if (!g.hasLegalAction()) box.append(button('Pasar turno', 'secondary', () => g.pass()));
     } else if (g.phase === 'evolve') {
       box.append(el('p', null, 'Puedes hacer evolucionar una criatura (gratis, una por turno):'));
@@ -990,7 +1333,7 @@
       if (first) setTimeout(() => first.focus(), 0);
     } else if (g.phase === 'discard') {
       const extra = g.tokenCount(p) - C.MAX_TOKENS;
-      box.append(el('p', 'warn', `Tienes ${g.tokenCount(p)} pokébolas (máximo ${C.MAX_TOKENS}): haz clic en las tuyas para devolver ${extra}.`));
+      box.append(el('p', 'warn', `Tienes ${g.tokenCount(p)} pokebolas (máximo ${C.MAX_TOKENS}): haz clic en las tuyas para devolver ${extra}.`));
     }
   }
 
@@ -1012,12 +1355,29 @@
     box.textContent = '';
     const panel = el('div', 'overlay-panel');
     const r = g.result;
-    panel.append(el('h2', null, r.tie ? '¡Empate!' : isMe(r.ranking[0]) ? '¡Ganaste!' : `¡Gana ${r.ranking[0].name}!`));
-    const list = el('ol', 'ranking');
-    r.ranking.forEach(p => {
-      list.append(el('li', null, `${displayName(p)}: ${g.pointsOf(p)} puntos · ${p.under.length} evoluciones · ${p.cards.length} criaturas`));
-    });
-    panel.append(list);
+    const line = p => `${displayName(p)}: ${g.pointsOf(p)} puntos · ${p.under.length} evoluciones · ${p.cards.length} criaturas`;
+    if (g.teams) {
+      const mine = meIndex() != null ? g.players[meIndex()].team : null;
+      panel.append(el('h2', null, r.winnerTeam == null ? '¡Empate!'
+        : r.winnerTeam === mine ? '¡Ganó tu equipo!' : `¡Gana el ${g.teamLabel(r.winnerTeam)}!`));
+      const order = r.winnerTeam === 1 ? [1, 0] : [0, 1];
+      const list = el('ol', 'ranking');
+      order.forEach(t => {
+        const li = el('li', 'team-result');
+        const head = el('div');
+        head.append(teamTag(t), el('b', null, ` ${g.teamPoints(t)} puntos`));
+        const members = el('ul');
+        g.teamMembers(t).forEach(p => members.append(el('li', null, line(p))));
+        li.append(head, members);
+        list.append(li);
+      });
+      panel.append(list);
+    } else {
+      panel.append(el('h2', null, r.tie ? '¡Empate!' : isMe(r.ranking[0]) ? '¡Ganaste!' : `¡Gana ${r.ranking[0].name}!`));
+      const list = el('ol', 'ranking');
+      r.ranking.forEach(p => list.append(el('li', null, line(p))));
+      panel.append(list);
+    }
     const actions = el('div', 'dialog-actions');
     if (state.role === 'guest') {
       panel.append(el('p', 'muted', `Si ${g.players[0].name} pide la revancha, se abrirá aquí automáticamente.`));
@@ -1031,7 +1391,8 @@
 
   function scheduleAi() {
     const g = state.game;
-    if (state.aiTimer || !g || g.phase === 'over' || !g.currentPlayer.ai) return;
+    // En red, las máquinas las mueve solo el anfitrión.
+    if (state.role === 'guest' || state.aiTimer || !g || g.phase === 'over' || !g.currentPlayer.ai) return;
     state.aiTimer = setTimeout(() => {
       state.aiTimer = null;
       if (state.game === g) SM.Ai.step(g);
@@ -1346,7 +1707,7 @@
     const shown = cards.filter(c =>
       (state.catalogTier === 'all' || c.tier === state.catalogTier) &&
       (!q || c.name.toLowerCase().includes(q) || c.num.includes(q) ||
-        c.types.some(t => String(t).toLowerCase().includes(q))));
+        c.types.some(t => String(t).toLowerCase().includes(q) || typeLabel(t).toLowerCase().includes(q))));
 
     $('#catalog-count').textContent = `${shown.length} de ${cards.length}`;
     const grid = $('#catalog-grid');
@@ -1406,7 +1767,7 @@
       const at = where(def.id);
       const inst = at ? at.inst : { uid: 'cat-' + def.id, id: def.id, cost: {} };
       const node = itemEl(inst, { showCost: false, onClick: () => openItem(inst, { browse: true }) });
-      node.append(el('span', 'item-price', `${def.price} pokébola${def.price > 1 ? 's' : ''}`));
+      node.append(el('span', 'item-price', `${def.price} pokebola${def.price > 1 ? 's' : ''}`));
       if (at) node.append(el('span', 'item-where', at.text));
       grid.append(node);
     });
@@ -1437,7 +1798,10 @@
     box.append(el('h3', null, !viewer ? 'Costo' : isMe(viewer) ? 'Costo y tu cuenta' : `Costo y cuenta de ${viewer.name}`));
     const table = el('table', 'cost-table');
     const head = el('tr');
-    const cols = viewer ? ['Pokébola', 'Cuesta', 'Capturas', 'En mano', 'Faltan'] : ['Pokébola', 'Cuesta'];
+    const partner = viewer ? state.game.partnerOf(viewer) : null;
+    const cols = !viewer ? ['Pokebola', 'Cuesta']
+      : partner ? ['Pokebola', 'Cuesta', 'Capturas', 'En mano', partner.name, 'Faltan']
+        : ['Pokebola', 'Cuesta', 'Capturas', 'En mano', 'Faltan'];
     cols.forEach(c => head.append(el('th', null, c)));
     table.append(head);
     const bonus = viewer ? state.game.bonusOf(viewer) : null;
@@ -1452,8 +1816,9 @@
         tr.append(
           el('td', null, gem === C.WILD ? '—' : String(bonus[gem])),
           el('td', null, String(viewer.tokens[gem])),
-          el('td', missing[gem] ? 'warn' : 'ok', missing[gem] ? String(missing[gem]) : '✓'),
         );
+        if (partner) tr.append(el('td', null, String(partner.tokens[gem])));
+        tr.append(el('td', missing[gem] ? 'warn' : 'ok', missing[gem] ? String(missing[gem]) : '✓'));
       }
       table.append(tr);
     });
@@ -1462,9 +1827,10 @@
       const pay = state.game.paymentFor(viewer, card);
       const totalLack = Object.values(missing).reduce((a, b) => a + b, 0);
       const wild = C.GEM_INFO[C.WILD].label;
-      if (pay.ok && totalLack) box.append(el('p', 'ok', `Te alcanza usando tus ${wild} como comodín para lo que falta.`));
+      if (partner) box.append(el('p', 'muted', `Primero se usan tus pokebolas; lo que falte sale de las de ${partner.name}.`));
+      if (pay.ok && totalLack) box.append(el('p', 'ok', `Te alcanza usando ${wild} como comodín para lo que falta.`));
       else if (pay.ok) box.append(el('p', 'ok', 'Tienes todo lo necesario para capturarlo.'));
-      else box.append(el('p', 'warn', `Te faltan ${pay.missing} pokébola(s) en total, contando tus ${wild} como comodín.`));
+      else box.append(el('p', 'warn', `Te faltan ${pay.missing} pokebola(s) en total, contando tus ${wild} como comodín.`));
     }
     return box;
   }
@@ -1478,10 +1844,10 @@
 
     const info = el('div', 'dialog-info');
     info.append(el('h2', null, card.name + (card.num ? ` #${card.num}` : '')));
-    info.append(el('p', 'muted', `${C.TIER_LABELS[card.tier]} · ${card.types.join(' / ') || 'Sin tipo'}`));
+    info.append(el('p', 'muted', `${C.TIER_LABELS[card.tier]} · ${typeList(card.types, ' / ') || 'Sin tipo'}`));
     const size = [card.height, card.weight].filter(Boolean).join(' · ');
     if (size) info.append(el('p', 'muted', size));
-    if (card.weaknesses.length) info.append(el('p', 'muted', 'Débil contra: ' + card.weaknesses.join(', ')));
+    if (card.weaknesses.length) info.append(el('p', 'muted', 'Débil contra: ' + typeList(card.weaknesses, ', ')));
     info.append(el('p', null, `Da ${card.points} punto(s) y ${card.bonus} de bonificación permanente de ${C.GEM_INFO[card.gem].label}.`));
     if (card.cost[C.WILD]) info.append(el('p', 'note', `Para capturarla hay que pagar al menos 1 ${C.GEM_INFO[C.WILD].label}.`));
     card.evolutions.forEach(ev => {
@@ -1559,7 +1925,7 @@
 
   // Piezas de interfaz que reutiliza la guía de reglas (js/rules.js).
   SM.UI = {
-    el, button, gemEl, cardEl, backEl, itemEl,
+    el, button, gemEl, cardEl, backEl, itemEl, typeLabel,
     typeGroups: () => state.typeGroups,
     cards: () => (state.game ? [...state.game.cards.values()] : state.cards || []),
   };

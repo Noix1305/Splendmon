@@ -1,10 +1,13 @@
 // Estado y reglas de la partida. No toca la página: la interfaz escucha onChange.
 SM.Game = class Game {
-  constructor(cards, setup) {
+  // setup: [{ name, ai }]. opts.teams: 2 contra 2 (solo con 4 jugadores), alternados:
+  // jugadores 0 y 2 son el equipo 0; 1 y 3, el equipo 1.
+  constructor(cards, setup, opts = {}) {
     const C = SM.Config;
     this.cards = new Map(cards.map(c => [c.uid, c]));
+    this.teams = !!opts.teams && setup.length === 4;
     this.players = setup.map((p, i) => ({
-      index: i, name: p.name, ai: !!p.ai,
+      index: i, name: p.name, ai: !!p.ai, team: this.teams ? i % 2 : null,
       tokens: Game.emptyTokens(), cards: [], reserved: [], under: [],
       items: [], relics: [], peek: null, extraPoints: 0, lastPaid: null,
     }));
@@ -19,7 +22,7 @@ SM.Game = class Game {
     const perGem = C.TOKENS_PER_GEM[this.players.length] || 7;
     this.bank = Game.emptyTokens();
     C.GEMS.forEach(g => { this.bank[g] = perGem; });
-    this.bank[C.WILD] = C.WILD_TOKENS;
+    this.bank[C.WILD] = C.WILD_TOKENS[this.players.length] || 5;
 
     this.decks = {};
     this.market = {};
@@ -74,8 +77,9 @@ SM.Game = class Game {
     const market = {};
     SM.Config.TIERS.forEach(t => { decks[t] = this.decks[t].length; market[t] = ids(this.market[t]); });
     return {
+      teams: this.teams,
       players: this.players.map(p => ({
-        name: p.name, ai: p.ai, tokens: Object.assign({}, p.tokens),
+        name: p.name, ai: p.ai, team: p.team, tokens: Object.assign({}, p.tokens),
         cards: ids(p.cards), reserved: ids(p.reserved), under: ids(p.under),
         items: p.items.slice(), relics: p.relics.slice(), peek: p.peek,
         extraPoints: p.extraPoints || 0, lastPaid: p.lastPaid,
@@ -85,7 +89,9 @@ SM.Game = class Game {
       itemShop: this.itemShop.slice(), itemDeck: this.itemDeck.length + this.itemDiscard.length,
       first: this.first, current: this.current, round: this.round,
       phase: this.phase, finalRound: this.finalRound,
-      result: this.result && { ranking: this.result.ranking.map(p => p.index), tie: this.result.tie },
+      result: this.result && {
+        ranking: this.result.ranking.map(p => p.index), tie: this.result.tie, winnerTeam: this.result.winnerTeam,
+      },
       log: this.log.slice(),
     };
   }
@@ -102,8 +108,9 @@ SM.Game = class Game {
 
   applySnapshot(s) {
     const card = uid => (uid == null ? null : this.cards.get(uid));
+    this.teams = !!s.teams;
     this.players = s.players.map((p, i) => ({
-      index: i, name: p.name, ai: !!p.ai, tokens: Object.assign({}, p.tokens),
+      index: i, name: p.name, ai: !!p.ai, team: p.team == null ? null : p.team, tokens: Object.assign({}, p.tokens),
       cards: p.cards.map(card), reserved: p.reserved.map(card), under: p.under.map(card),
       items: (p.items || []).slice(), relics: (p.relics || []).slice(), peek: p.peek || null,
       extraPoints: p.extraPoints || 0, lastPaid: p.lastPaid || null,
@@ -123,7 +130,10 @@ SM.Game = class Game {
     this.round = s.round;
     this.phase = s.phase;
     this.finalRound = s.finalRound;
-    this.result = s.result && { ranking: s.result.ranking.map(i => this.players[i]), tie: s.result.tie };
+    this.result = s.result && {
+      ranking: s.result.ranking.map(i => this.players[i]), tie: s.result.tie,
+      winnerTeam: s.result.winnerTeam == null ? null : s.result.winnerTeam,
+    };
     this.log = s.log.slice();
     this.emit();
   }
@@ -147,6 +157,52 @@ SM.Game = class Game {
 
   pointsOf(p) { return p.cards.reduce((s, c) => s + c.points, 0) + (p.extraPoints || 0); }
   tokenCount(p) { return Object.values(p.tokens).reduce((a, b) => a + b, 0); }
+
+  // ---------- Equipos
+
+  teamLabel(team) { return SM.Config.TEAMS[team].label; }
+  teamMembers(team) { return this.players.filter(p => p.team === team); }
+  teamPoints(team) { return this.teamMembers(team).reduce((s, p) => s + this.pointsOf(p), 0); }
+  partnerOf(p) { return this.teams ? this.players.find(o => o.team === p.team && o !== p) || null : null; }
+  targetPoints() { return this.teams ? SM.Config.TEAM_TARGET_POINTS : SM.Config.TARGET_POINTS; }
+
+  // Pokebolas con las que puede pagar: las suyas y, en equipos, también las del compañero.
+  spendableTokens(p) {
+    const partner = this.partnerOf(p);
+    const t = Object.assign({}, p.tokens);
+    if (partner) Object.keys(t).forEach(g => { t[g] += partner.tokens[g]; });
+    return t;
+  }
+
+  // Reparte un pago total entre el jugador (primero) y su compañero (lo que falte).
+  splitPayment(p, total) {
+    const partner = this.partnerOf(p);
+    const own = Game.emptyTokens();
+    const fromPartner = Game.emptyTokens();
+    Object.keys(total).forEach(g => {
+      own[g] = Math.min(total[g], p.tokens[g]);
+      fromPartner[g] = total[g] - own[g];
+    });
+    return { own, fromPartner: partner ? fromPartner : null };
+  }
+
+  // Cobra un pago (de applyPayment / checkBuy): primero del jugador, luego del compañero.
+  collectPayment(p, pay) {
+    const { own, fromPartner } = this.splitPayment(p, pay);
+    const partner = this.partnerOf(p);
+    Object.keys(pay).forEach(g => {
+      p.tokens[g] -= own[g];
+      if (partner && fromPartner) partner.tokens[g] -= fromPartner[g];
+      this.bank[g] += pay[g];
+    });
+    return fromPartner && Object.values(fromPartner).some(n => n > 0) ? fromPartner : null;
+  }
+
+  partnerNote(p, fromPartner) {
+    if (!fromPartner) return '';
+    const n = Object.values(fromPartner).reduce((a, b) => a + b, 0);
+    return ` (${n} pokebola${n > 1 ? 's' : ''} de ${this.partnerOf(p).name})`;
+  }
 
   visibleCardsFor(p) {
     const list = [];
@@ -221,36 +277,36 @@ SM.Game = class Game {
 
   // ---------- Acciones A y B: tomar fichas
 
-  // Problema de una selección de pokébolas, o '' si está bien. Con complete=false solo
+  // Problema de una selección de pokebolas, o '' si está bien. Con complete=false solo
   // revisa que se pueda seguir agregando (lo usa la interfaz para saber qué se puede elegir).
-  // extra: pokébolas adicionales que permite la Bicicleta.
+  // extra: pokebolas adicionales que permite la Bicicleta.
   takeProblem(gems, extra = 0, complete = true) {
     const C = SM.Config;
     if (gems.includes(C.WILD)) return `La ${this.gemLabel(C.WILD)} solo se consigue al reservar.`;
-    if (gems.some(g => !C.GEMS.includes(g))) return 'Pokébola desconocida.';
+    if (gems.some(g => !C.GEMS.includes(g))) return 'Pokebola desconocida.';
     const count = {};
     gems.forEach(g => { count[g] = (count[g] || 0) + 1; });
-    if (Object.keys(count).some(g => count[g] > this.bank[g])) return 'No quedan pokébolas de ese tipo.';
+    if (Object.keys(count).some(g => count[g] > this.bank[g])) return 'No quedan pokebolas de ese tipo.';
     const pairs = Object.keys(count).filter(g => count[g] === 2);
     if (Object.values(count).some(n => n > 2) || pairs.length > 1) return 'Solo se puede repetir un tipo, y solo 2 iguales.';
     if (pairs.length && this.bank[pairs[0]] < C.MIN_BANK_FOR_DOUBLE) {
       return `Para tomar 2 iguales deben quedar al menos ${C.MIN_BANK_FOR_DOUBLE} en la reserva.`;
     }
     const max = (pairs.length ? 2 : 3) + extra;
-    if (gems.length > max) return extra ? `Con Bicicleta: ${3 + extra} distintas, o 2 iguales y ${extra} distinta.` : 'Como máximo 3 pokébolas distintas, o 2 iguales.';
+    if (gems.length > max) return extra ? `Con Bicicleta: ${3 + extra} distintas, o 2 iguales y ${extra} distinta.` : 'Como máximo 3 pokebolas distintas, o 2 iguales.';
     if (complete && gems.length < max) {
       const others = C.GEMS.filter(g => this.bank[g] > 0 && !count[g]).length;
-      if (!gems.length) return 'Elige pokébolas de las disponibles.';
+      if (!gems.length) return 'Elige pokebolas de las disponibles.';
       if (others > 0) return extra
         ? `Con Bicicleta: elige ${3 + extra} distintas, o 2 iguales y ${extra} distinta.`
-        : 'Elige 3 pokébolas distintas, o 2 iguales.';
+        : 'Elige 3 pokebolas distintas, o 2 iguales.';
     }
     return '';
   }
 
-  // opts.bike: uid de una Bicicleta para tomar 1 pokébola más.
+  // opts.bike: uid de una Bicicleta para tomar 1 pokebola más.
   checkTake(gems, opts = {}) {
-    if (this.phase !== 'action') return Game.fail('Ahora no se pueden tomar pokébolas.');
+    if (this.phase !== 'action') return Game.fail('Ahora no se pueden tomar pokebolas.');
     let extra = 0;
     if (opts.bike) {
       const bike = this.ownedItem(this.currentPlayer, opts.bike, 'take');
@@ -286,18 +342,20 @@ SM.Game = class Game {
 
   // ---------- Objetos: comprar en la tienda (usa la acción del turno)
 
-  // Pago de un objeto: pokébolas de la mano; lo que falte, con Master Ball.
+  // Pago de un objeto: pokebolas de la mano; lo que falte, con Master Ball.
+  // En equipos cuenta también lo del compañero (ver collectPayment).
   itemPayment(p, inst) {
     const C = SM.Config;
+    const have = this.spendableTokens(p);
     const pay = Game.emptyTokens();
     let wild = 0;
     C.GEMS.forEach(g => {
       const need = inst.cost[g] || 0;
-      pay[g] = Math.min(need, p.tokens[g]);
+      pay[g] = Math.min(need, have[g]);
       wild += need - pay[g];
     });
     pay[C.WILD] = wild;
-    return { ok: p.tokens[C.WILD] >= wild, pay, missing: Math.max(0, wild - p.tokens[C.WILD]) };
+    return { ok: have[C.WILD] >= wild, pay, missing: Math.max(0, wild - have[C.WILD]) };
   }
 
   checkBuyItem(slot) {
@@ -309,7 +367,7 @@ SM.Game = class Game {
     if (this.itemDef(inst).kind !== 'relic' && p.items.length >= this.itemLimit(p)) return Game.fail(`Ya tienes ${this.itemLimit(p)} objetos. Usa alguno primero.`);
     if (this.itemDef(inst).kind === 'relic' && this.hasRelic(p, inst.id)) return Game.fail('Ya tienes ese objeto permanente.');
     const payment = this.itemPayment(p, inst);
-    if (!payment.ok) return Game.fail(`Te faltan ${payment.missing} pokébola(s).`);
+    if (!payment.ok) return Game.fail(`Te faltan ${payment.missing} pokebola(s).`);
     return Game.ok({ pay: payment.pay });
   }
 
@@ -318,11 +376,11 @@ SM.Game = class Game {
     if (!check.ok) return check;
     const p = this.currentPlayer;
     const inst = this.itemShop[slot];
-    Object.keys(check.pay).forEach(g => { p.tokens[g] -= check.pay[g]; this.bank[g] += check.pay[g]; });
+    const helped = this.partnerNote(p, this.collectPayment(p, check.pay));
     const def = this.itemDef(inst);
     (def.kind === 'relic' ? p.relics : p.items).push(inst);
     this.itemShop[slot] = this.drawItem();
-    this.addLog(`${p.name} compra ${def.name}.`, p.index, `Compras ${def.name}.`);
+    this.addLog(`${p.name} compra ${def.name}${helped}.`, p.index, `Compras ${def.name}${helped}.`);
     this.afterAction();
     this.emit();
     return check;
@@ -341,8 +399,8 @@ SM.Game = class Game {
     if (give.length > max) return Game.fail(`Como máximo ${max}.`);
     if ([...give, ...take].some(g => !C.GEMS.includes(g))) return Game.fail(`No sirve con ${this.gemLabel(C.WILD)}.`);
     const need = (list, from) => list.every(g => list.filter(x => x === g).length <= from[g]);
-    if (!need(give, p.tokens)) return Game.fail('No tienes esas pokébolas.');
-    if (!need(take, this.bank)) return Game.fail('No quedan esas pokébolas.');
+    if (!need(give, p.tokens)) return Game.fail('No tienes esas pokebolas.');
+    if (!need(take, this.bank)) return Game.fail('No quedan esas pokebolas.');
     return Game.ok();
   }
 
@@ -360,7 +418,7 @@ SM.Game = class Game {
     return check;
   }
 
-  // ---------- Objetos: Poción (recuperar pokébolas de la última captura; gratis)
+  // ---------- Objetos: Poción (recuperar pokebolas de la última captura; gratis)
 
   potionRecovery(p) {
     const C = SM.Config;
@@ -380,7 +438,7 @@ SM.Game = class Game {
     const p = this.currentPlayer;
     const inst = this.ownedItem(p, uid);
     if (!inst || this.itemDef(inst).id !== 'potion') return Game.fail('No tienes esa Poción.');
-    if (!this.potionRecovery(p).length) return Game.fail('No hay pokébolas que recuperar de tu última captura.');
+    if (!this.potionRecovery(p).length) return Game.fail('No hay pokebolas que recuperar de tu última captura.');
     return Game.ok();
   }
 
@@ -397,7 +455,7 @@ SM.Game = class Game {
     return check;
   }
 
-  // ---------- Objetos: Pepita (venderla por 3 pokébolas a elección; gratis)
+  // ---------- Objetos: Pepita (venderla por 3 pokebolas a elección; gratis)
 
   nuggetCount(inst) {
     return Math.min(this.itemDef(inst).sell, SM.Config.GEMS.reduce((s, g) => s + this.bank[g], 0));
@@ -411,8 +469,8 @@ SM.Game = class Game {
     if (!inst || this.itemDef(inst).id !== 'nugget') return Game.fail('No tienes esa Pepita.');
     const want = this.nuggetCount(inst);
     if (take.some(g => !C.GEMS.includes(g))) return Game.fail(`No sirve con ${this.gemLabel(C.WILD)}.`);
-    if (!take.every(g => take.filter(x => x === g).length <= this.bank[g])) return Game.fail('No quedan esas pokébolas.');
-    if (take.length !== want) return Game.fail(`Elige ${want} pokébola(s).`);
+    if (!take.every(g => take.filter(x => x === g).length <= this.bank[g])) return Game.fail('No quedan esas pokebolas.');
+    if (take.length !== want) return Game.fail(`Elige ${want} pokebola(s).`);
     return Game.ok();
   }
 
@@ -564,16 +622,18 @@ SM.Game = class Game {
 
   // ---------- Acción D: capturar
 
-  // discount: pokébolas que perdona un Cupón. Se descuentan primero las que habría que
+  // discount: pokebolas que perdona un Cupón. Se descuentan primero las que habría que
   // pagar con Master Ball (las que no tienes), luego las de tu mano.
+  // En equipos, "tus pokebolas" incluyen las del compañero (se cobran después de las tuyas).
   paymentFor(p, card, discount = 0) {
     const C = SM.Config;
     const bonus = this.bonusOf(p);
+    const have = this.spendableTokens(p);
     const pay = Game.emptyTokens();
     const need = {};
     C.GEMS.forEach(g => { need[g] = Math.max(0, (card.cost[g] || 0) - bonus[g]); });
     let left = discount;
-    const lackOf = g => Math.max(0, need[g] - p.tokens[g]);
+    const lackOf = g => Math.max(0, need[g] - have[g]);
     while (left > 0) {
       const g = C.GEMS.filter(x => need[x] > 0).sort((a, b) => lackOf(b) - lackOf(a) || need[b] - need[a])[0];
       if (!g) break;
@@ -581,12 +641,12 @@ SM.Game = class Game {
     }
     let wildNeeded = card.cost[C.WILD] || 0;
     C.GEMS.forEach(g => {
-      const use = Math.min(need[g], p.tokens[g]);
+      const use = Math.min(need[g], have[g]);
       pay[g] = use;
       wildNeeded += need[g] - use;
     });
     pay[C.WILD] = wildNeeded;
-    return { ok: p.tokens[C.WILD] >= wildNeeded, pay, missing: Math.max(0, wildNeeded - p.tokens[C.WILD]) };
+    return { ok: have[C.WILD] >= wildNeeded, pay, missing: Math.max(0, wildNeeded - have[C.WILD]) };
   }
 
   // opts.coupon: uid de un Cupón para pagar menos.
@@ -605,8 +665,8 @@ SM.Game = class Game {
     const card = this.cards.get(uid);
     const payment = this.paymentFor(p, card, discount);
     if (!payment.ok) {
-      const wildOnly = (card.cost[SM.Config.WILD] || 0) > p.tokens[SM.Config.WILD];
-      return Game.fail(wildOnly ? `Necesitas al menos 1 ${this.gemLabel(SM.Config.WILD)} para capturarla.` : `Te faltan ${payment.missing} pokébola(s).`);
+      const wildOnly = (card.cost[SM.Config.WILD] || 0) > this.spendableTokens(p)[SM.Config.WILD];
+      return Game.fail(wildOnly ? `Necesitas al menos 1 ${this.gemLabel(SM.Config.WILD)} para capturarla.` : `Te faltan ${payment.missing} pokebola(s).`);
     }
     return Game.ok({ pay: payment.pay });
   }
@@ -616,14 +676,14 @@ SM.Game = class Game {
     if (!check.ok) return check;
     const p = this.currentPlayer;
     const card = this.removeCard(this.locate(uid));
-    Object.keys(check.pay).forEach(g => { p.tokens[g] -= check.pay[g]; this.bank[g] += check.pay[g]; });
+    const helped = this.partnerNote(p, this.collectPayment(p, check.pay));
     if (opts.coupon) this.spendItem(p, opts.coupon);
     p.lastPaid = {};
     SM.Config.GEMS.forEach(g => { if (check.pay[g]) p.lastPaid[g] = check.pay[g]; });
     p.cards.push(card);
     const pts = card.points ? ` (+${card.points} pts)` : '';
     const coupon = opts.coupon ? ' con un Cupón' : '';
-    this.addLog(`${p.name} captura a ${card.name}${pts}${coupon}.`, p.index, `Capturas a ${card.name}${pts}${coupon}.`);
+    this.addLog(`${p.name} captura a ${card.name}${pts}${coupon}${helped}.`, p.index, `Capturas a ${card.name}${pts}${coupon}${helped}.`);
     this.afterAction();
     this.emit();
     return check;
@@ -693,7 +753,7 @@ SM.Game = class Game {
   // ---------- Final del turno: evolución
 
   // Evoluciones posibles. Cada opción trae item: null (con tus capturas) o el objeto
-  // que la permite (Caramelo Raro, o una piedra que suma pokébolas de su tipo).
+  // que la permite (Caramelo Raro, o una piedra que suma pokebolas de su tipo).
   availableEvolutions(p = this.currentPlayer) {
     const bonus = this.bonusOf(p);
     const options = [];
@@ -745,14 +805,14 @@ SM.Game = class Game {
   // ---------- Final del turno: límite de fichas
 
   returnToken(gem) {
-    if (this.phase !== 'discard') return Game.fail('No tienes que devolver pokébolas.');
+    if (this.phase !== 'discard') return Game.fail('No tienes que devolver pokebolas.');
     const p = this.currentPlayer;
-    if (p.tokens[gem] < 1) return Game.fail('No tienes pokébolas de ese tipo.');
+    if (p.tokens[gem] < 1) return Game.fail('No tienes pokebolas de ese tipo.');
     p.tokens[gem]--;
     this.bank[gem]++;
     if (this.tokenCount(p) <= SM.Config.MAX_TOKENS) {
-      this.addLog(`${p.name} devuelve pokébolas hasta quedarse con ${SM.Config.MAX_TOKENS}.`, p.index,
-        `Devuelves pokébolas hasta quedarte con ${SM.Config.MAX_TOKENS}.`);
+      this.addLog(`${p.name} devuelve pokebolas hasta quedarse con ${SM.Config.MAX_TOKENS}.`, p.index,
+        `Devuelves pokebolas hasta quedarte con ${SM.Config.MAX_TOKENS}.`);
       this.endTurn();
     }
     this.emit();
@@ -774,11 +834,19 @@ SM.Game = class Game {
   endTurn() {
     const C = SM.Config;
     const p = this.currentPlayer;
-    const points = this.pointsOf(p);
-    if (!this.finalRound && points >= C.TARGET_POINTS) {
-      this.finalRound = true;
-      this.addLog(`¡${p.name} llega a ${points} puntos! Se juega hasta cerrar la ronda.`, p.index,
-        `¡Llegas a ${points} puntos! Se juega hasta cerrar la ronda.`);
+    if (this.teams) {
+      const points = this.teamPoints(p.team);
+      if (!this.finalRound && points >= C.TEAM_TARGET_POINTS) {
+        this.finalRound = true;
+        this.addLog(`¡El ${this.teamLabel(p.team)} llega a ${points} puntos! Se juega hasta cerrar la ronda.`);
+      }
+    } else {
+      const points = this.pointsOf(p);
+      if (!this.finalRound && points >= C.TARGET_POINTS) {
+        this.finalRound = true;
+        this.addLog(`¡${p.name} llega a ${points} puntos! Se juega hasta cerrar la ronda.`, p.index,
+          `¡Llegas a ${points} puntos! Se juega hasta cerrar la ronda.`);
+      }
     }
     this.current = (this.current + 1) % this.players.length;
     if (this.current === this.first) {
@@ -787,7 +855,7 @@ SM.Game = class Game {
     }
     this.phase = 'action';
     this.addLog(`Turno de ${this.currentPlayer.name}.`, this.current, 'Tu turno.');
-    // Restos: si empieza con menos de 5 pokébolas en mano, recibe 1.
+    // Restos: si empieza con menos de 5 pokebolas en mano, recibe 1.
     const next = this.currentPlayer;
     if (this.hasRelic(next, 'leftovers') && this.tokenCount(next) < 5) {
       const g = C.GEMS.filter(x => this.bank[x] > 0).sort((a, b) => this.bank[b] - this.bank[a])[0];
@@ -800,13 +868,26 @@ SM.Game = class Game {
 
   finish() {
     this.phase = 'over';
+    if (this.teams) {
+      // Por equipos: puntos sumados; desempatan las evoluciones y luego tener menos criaturas.
+      const sum = (team, f) => this.teamMembers(team).reduce((s, p) => s + f(p), 0);
+      const score = t => [this.teamPoints(t), sum(t, p => p.under.length), -sum(t, p => p.cards.length)];
+      const [a, b] = [score(0), score(1)];
+      const diff = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+      const winnerTeam = diff === 0 ? null : diff > 0 ? 0 : 1;
+      const order = winnerTeam === 1 ? [1, 0] : [0, 1];
+      const ranking = order.flatMap(t => this.teamMembers(t).sort((x, y) => this.pointsOf(y) - this.pointsOf(x)));
+      this.result = { ranking, tie: winnerTeam == null, winnerTeam };
+      this.addLog(winnerTeam == null ? 'La partida termina en empate.' : `¡Gana el ${this.teamLabel(winnerTeam)}!`);
+      return;
+    }
     const compare = (a, b) =>
       this.pointsOf(b) - this.pointsOf(a) ||
       b.under.length - a.under.length ||
       a.cards.length - b.cards.length;
     const ranking = this.players.slice().sort(compare);
     const tie = ranking.length > 1 && compare(ranking[0], ranking[1]) === 0;
-    this.result = { ranking, tie };
+    this.result = { ranking, tie, winnerTeam: null };
     if (tie) this.addLog('La partida termina en empate.');
     else this.addLog(`¡${ranking[0].name} gana la partida!`, ranking[0].index, '¡Ganas la partida!');
   }
