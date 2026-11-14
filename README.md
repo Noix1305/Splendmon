@@ -1,24 +1,34 @@
 # Mercado de Criaturas
 
-Juego de cartas para dos jugadores: se juntan gemas, se capturan criaturas que dan descuentos permanentes y se hacen evolucionar. Gana quien llegue a 18 puntos al cerrar la ronda.
+Juego de cartas para 2 a 4 jugadores, solos o por equipos: se juntan gemas, se capturan criaturas que dan descuentos permanentes y se hacen evolucionar. Gana quien llegue a 18 puntos al cerrar la ronda.
 
 ## Cómo jugar
 
 Abre `index.html` en el navegador (doble clic). No necesita instalar nada.
 
 1. Carga un `.json` de criaturas, o pulsa **Usar las criaturas de ejemplo**.
-2. Elige si el jugador 2 lo controla la máquina u otra persona en el mismo equipo.
-3. **Empezar partida.**
+2. Elige cuántos jugadores (2 a 4) y el modo: **Todos contra todos** o **Equipos: 2 contra 2** (solo con 4).
+3. Para cada jugador, elige quién lo controla: la máquina, otra persona en el mismo equipo u otra persona por internet. Se pueden mezclar.
+4. **Empezar partida** (o **Crear sala** si alguien juega por internet).
 
-### Jugar en red con otra persona
+Las pokebolas cambian con el número de jugadores: 4, 5 o 7 de cada tipo y 5, 5 o 7 Master Ball (con 2, 3 o 4 jugadores). Se ajusta en `TOKENS_PER_GEM` y `WILD_TOKENS` de `js/config.js`.
 
-Hace falta conexión a internet en los dos equipos. No hay que instalar nada ni abrir puertos.
+### Equipos (2 contra 2)
 
-1. **Quien crea la partida:** carga las criaturas, en «¿Quién controla al jugador 2?» elige **Otra persona, por internet** y pulsa **Crear sala**. Aparece un código de 6 letras.
-2. **Quien se une:** abre el juego en su equipo, escribe su nombre y el código en **Únete a una partida en red** y pulsa **Unirse**. No necesita cargar criaturas.
-3. La partida empieza sola. Cada uno ve sus fichas y reservas abajo, y las reservas del rival boca abajo.
+- Juegan alternados: los jugadores 1 y 3 (Equipo A) contra los jugadores 2 y 4 (Equipo B).
+- Cada equipo suma los puntos de sus dos jugadores. La última ronda empieza cuando un equipo llega a 30 (`TEAM_TARGET_POINTS`).
+- Al capturar o comprar un objeto puedes pagar con las pokebolas de tu compañero: primero se usan las tuyas y lo que falte sale de las suyas. Sus objetos y las bonificaciones de sus capturas no te sirven.
+- Ves las reservas y los objetos de tu compañero; los del otro equipo, boca abajo.
 
-El emparejamiento usa el servidor público gratuito de [PeerJS](https://peerjs.com); después, las jugadas van directamente de un navegador al otro. Algunas redes muy cerradas (de empresa o de universidad) bloquean este tipo de conexión. Si se corta la conexión, la partida termina.
+### Jugar en red
+
+Hace falta conexión a internet en todos los equipos. No hay que instalar nada ni abrir puertos.
+
+1. **Quien crea la partida:** carga las criaturas, pon **Otra persona, por internet** en los jugadores que se conectarán y pulsa **Crear sala**. Aparece un código de 6 letras.
+2. **Quienes se unen:** abren el juego en su equipo, escriben su nombre y el código en **Únete a una partida en red** y pulsan **Unirse**. No necesitan cargar criaturas. Cada uno ocupa el siguiente asiento libre, en orden.
+3. La partida empieza sola cuando están todos. Cada uno se ve abajo a la izquierda, y las reservas de los rivales se ven boca abajo.
+
+El emparejamiento usa el servidor público gratuito de [PeerJS](https://peerjs.com); después, las jugadas van directamente de un navegador al otro. Algunas redes muy cerradas (de empresa o de universidad) bloquean este tipo de conexión. Si alguien se desconecta, la partida termina para todos.
 
 Si sirves la carpeta con un servidor web, el juego carga solo el archivo `monsters.json` que esté junto a `index.html`.
 

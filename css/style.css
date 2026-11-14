@@ -42,6 +42,8 @@ body {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
   color: var(--ink);
   min-height: 100vh;
+  /* Espacio libre para el aviso legal fijo (js/ui.js mide su altura). */
+  padding-bottom: var(--footer-h, 0px);
 }
 
 /* ---------- Fondos (el jugador elige uno; se guarda en su navegador)
@@ -277,8 +279,8 @@ html.bg-image body::after {
       )
       auto;
 }
-html.bg-image .setup > h1,
-html.bg-image .setup > .lead,
+html.bg-image .setup-title h1,
+html.bg-image .setup-title .lead,
 html.bg-image .topbar #status {
   text-shadow:
     0 1px 3px rgba(0, 0, 0, 0.85),
@@ -286,8 +288,8 @@ html.bg-image .topbar #status {
 }
 
 /* Texto que va directo sobre el fondo */
-.setup > h1,
-.setup > .lead,
+.setup-title h1,
+.setup-title .lead,
 .topbar #status {
   color: var(--on-bg, var(--ink));
 }
@@ -399,19 +401,57 @@ select {
   background: var(--surface-2);
   color: var(--ink);
 }
+/* La lista que se abre la dibuja el navegador: se le da el fondo del tema (opaco, porque
+   los temas Cristal tienen superficies translúcidas) y el mismo color de texto. */
+select option,
+select optgroup {
+  background-color: var(--bg);
+  color: var(--ink);
+}
+select option:checked {
+  background-color: var(--accent);
+  color: var(--accent-ink);
+}
 
 /* ---------- Pantalla inicial */
 .setup {
-  max-width: 760px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 32px 16px 48px;
+  padding: 18px 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 .setup h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.7rem;
+  line-height: 1.15;
+}
+/* Título a la izquierda y botones a la derecha */
+.setup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+.setup-title {
+  flex: 1 1 320px;
+}
+.setup-title .lead {
+  font-size: 0.92rem;
+}
+/* Pokémon y Jugadores lado a lado; en pantallas angostas, uno debajo del otro */
+.setup-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .setup-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .lead {
   margin: 0;
@@ -432,8 +472,8 @@ select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 20px;
+  gap: 2px;
+  padding: 12px;
   border: 2px dashed var(--line);
   border-radius: 10px;
   cursor: pointer;
@@ -485,6 +525,15 @@ select {
   align-self: flex-start;
   padding: 0.7rem 1.4rem;
   font-size: 1.05rem;
+}
+/* Campos y listas de la pantalla inicial: misma altura, para que las filas queden parejas. */
+.players-form :is(input, select, button),
+.seat :is(input, select) {
+  height: 2.5rem;
+}
+.players-form button {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 #join {
   align-self: end;
@@ -542,7 +591,7 @@ select {
   --size: 19px;
   font-size: 0.7rem;
 }
-/* Fichas con sprite de pokébola: la imagen reemplaza el círculo y el número va en una burbuja. */
+/* Fichas con sprite de pokebola: la imagen reemplaza el círculo y el número va en una burbuja. */
 .gem.ball {
   --size: 44px;
   position: relative;
@@ -640,8 +689,11 @@ select {
   border-radius: 999px;
   font-size: 0.8rem;
 }
-#area-p2 {
+#opponents {
   grid-area: p2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 #area-p1 {
   grid-area: p1;
@@ -1009,7 +1061,7 @@ select {
 
 /* Raros y legendarios: reflejo holográfico en TODO el fondo de la carta, detrás del Pokémon.
    Es una capa más del fondo de la carta (no un elemento encima), así el sprite queda por delante.
-   Capas: brillo que se desplaza · halo del color de la pokébola · color de la carta. */
+   Capas: brillo que se desplaza · halo del color de la pokebola · color de la carta. */
 /* RAROS: reflejo holográfico arcoíris que cruza la carta en diagonal */
 .card.tier-rare:not(.back) {
   background:
@@ -1033,17 +1085,17 @@ select {
     100% 100%,
     100% 100%;
   background-repeat: no-repeat;
-  animation: foil 3.2s ease-in-out infinite;
+  animation: foil 4.4s ease-in-out infinite;
 }
 .card.affordable.tier-rare:not(.back) {
   animation:
-    foil 3.2s ease-in-out infinite,
+    foil 4.4s ease-in-out infinite,
     affordable 1.6s ease-in-out infinite;
 }
 
 /* LEGENDARIOS: rayos de luz dorados que giran detrás del Pokémon, estrellas que suben
    y resplandor dorado/morado en el borde. Capas (de arriba a abajo):
-   estrellas · desvanecido hacia los bordes · rayos · halo del color de la pokébola · color de la carta. */
+   estrellas · desvanecido hacia los bordes · rayos · halo del color de la pokebola · color de la carta. */
 @property --legend-angle {
   syntax: "<angle>";
   inherits: false;
@@ -1137,16 +1189,18 @@ select {
       center;
   }
 }
-/* 0% = brillo fuera por la derecha · 100% = fuera por la izquierda; pausa entre pasadas */
+/* Ida y vuelta: el brillo cruza la carta (0% → 43%), regresa en reversa por el mismo
+   camino hasta donde empezó (43% → 86%) y descansa ahí antes de repetir (86% → 100%). */
 @keyframes foil {
-  0% {
+  0%,
+  86%,
+  100% {
     background-position:
       0% 0,
       center,
       center;
   }
-  60%,
-  100% {
+  43% {
     background-position:
       100% 0,
       center,
@@ -1260,7 +1314,7 @@ select {
   height: 100%;
   font-size: 0.5rem;
 }
-/* Pokébola con el requisito, pegada abajo a la derecha de la miniatura. */
+/* Pokebola con el requisito, pegada abajo a la derecha de la miniatura. */
 .evo-thumb .gem.ball.evo-req {
   --size: 20px;
   position: absolute;
@@ -1327,7 +1381,7 @@ select {
   text-overflow: ellipsis;
   flex: none;
 }
-/* Costo: una sola fila de pokébolas abajo. */
+/* Costo: una sola fila de pokebolas abajo. */
 .card-foot {
   display: flex;
   flex: none;
@@ -1407,7 +1461,7 @@ select {
 .card.big {
   zoom: 1.5;
 }
-/* ---------- Reverso de los mazos: color del nivel + pokébola del nivel al centro
+/* ---------- Reverso de los mazos: color del nivel + pokebola del nivel al centro
    Nivel 1 Poké Ball · Nivel 2 Great Ball · Nivel 3 Ultra Ball · Raros Premier Ball · Legendarios Master Ball */
 .card.back {
   --tier-dark: color-mix(in srgb, var(--tier) 62%, #000);
@@ -1546,7 +1600,7 @@ select {
   align-self: start;
   position: sticky;
   top: 12px;
-  max-height: calc(100vh - 24px);
+  max-height: calc(100vh - 24px - var(--footer-h, 0px));
   overflow: auto;
   box-shadow: var(--shadow);
 }
@@ -1839,10 +1893,10 @@ dialog::backdrop {
 
 /* ---------- Tableros de jugador en columna (izquierda y derecha) */
 #area-p1,
-#area-p2 {
+#opponents {
   position: sticky;
   top: 12px;
-  max-height: calc(100vh - 24px);
+  max-height: calc(100vh - 24px - var(--footer-h, 0px));
   overflow: auto;
 }
 .player-area .player-head {
@@ -1926,7 +1980,7 @@ dialog::backdrop {
     grid-template-areas: "top" "p2" "prompt" "table" "p1" "log";
   }
   #area-p1,
-  #area-p2 {
+  #opponents {
     position: static;
     max-height: none;
   }
@@ -1942,7 +1996,7 @@ dialog::backdrop {
   }
 }
 
-/* ---------- Recuento de pokébolas en el tablero del jugador */
+/* ---------- Recuento de pokebolas en el tablero del jugador */
 .player-area .player-gems.ball-table {
   display: grid;
   grid-template-columns: auto repeat(6, minmax(0, 1fr));
@@ -2537,6 +2591,23 @@ dialog::backdrop {
   --warn: #fb923c;
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
+/* Claro u oscuro según el tema: así las listas desplegables, barras de desplazamiento y
+   casillas del navegador usan colores que se leen bien con ese tema. */
+:root {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]),
+  :root[data-theme="auto"] {
+    color-scheme: dark;
+  }
+}
+:root:is([data-theme="dark"], [data-theme="gengar"], [data-theme="ocean"], [data-theme="glass-dark"]) {
+  color-scheme: dark;
+}
+:root:is([data-theme="light"], [data-theme="pokedex"], [data-theme="forest"], [data-theme="glass"]) {
+  color-scheme: light;
+}
 /* El efecto vidrio: desenfoca lo que hay detrás de cada panel */
 :root:is([data-theme="glass"], [data-theme="glass-dark"])
   :is(
@@ -2749,22 +2820,27 @@ html:is(
   visibility: visible;
 }
 
-/* Aviso legal al pie de la pantalla inicial */
+/* Aviso legal: fijo al pie de todas las pantallas. Su altura queda en --footer-h. */
 .legal {
-  margin-top: 8px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
-  border: 1px solid var(--line);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8;
+  margin: 0;
+  padding: 6px 16px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  text-align: center;
 }
 .legal p {
-  margin: 0;
-}
-.legal p + p {
-  margin-top: 6px;
+  margin: 0 auto;
+  max-width: 1400px;
 }
 .legal strong {
   color: var(--ink);
@@ -2773,13 +2849,66 @@ html:is(
   color: var(--accent);
 }
 .legal code {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
+}
+
+/* Botones de arriba de la pantalla inicial */
+.setup-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Ventanas Estilo y Pokebolas */
+.panel-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  flex-direction: column;
+}
+.panel-dialog[open] {
+  display: flex;
+}
+#legend-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+.panel-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-dialog-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.panel-dialog-head button {
+  margin-left: auto;
+}
+.panel-dialog-body {
+  overflow: auto;
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.panel-dialog-body h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+.panel-dialog-body p {
+  margin: 0 0 10px;
 }
 
 /* ---------- Objetos (js/items.js) */
 .item-card {
-  position: relative; width: 92px; height: 132px; flex: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px 6px 6px;
+  /* El alto depende del contenido (ícono, nombre y 1 o 2 filas de costo), nunca menos de 132px.
+     En la tienda todas se estiran a la más alta de la fila. Abajo queda espacio para el número
+     de cada pokebola, que sobresale un poco. */
+  position: relative; width: 92px; min-height: 132px; flex: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px 6px 10px;
   border-radius: 12px; border: 3px solid #c08a2b; text-align: center;
   background: radial-gradient(110% 80% at 50% 35%, color-mix(in srgb, #f2b705 22%, var(--surface)) 0%, var(--surface) 75%);
   box-shadow: var(--shadow); color: var(--ink);
@@ -2788,7 +2917,7 @@ html:is(
 .item-kind { position: absolute; top: 4px; left: 0; right: 0; font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .item-icon { font-size: 2.1rem; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
 .item-name { font-size: .74rem; font-weight: 800; line-height: 1.15; }
-.item-cost { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: auto; }
+.item-cost { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 3px; margin-top: auto; }
 .item-cost .gem.ball.small { --size: 22px; }
 .item-card.clickable { cursor: pointer; transition: transform .15s ease-out, box-shadow .2s; }
 .item-card.clickable:hover { transform: translateY(-4px); box-shadow: 0 10px 22px rgba(0, 0, 0, .22); }
@@ -2798,14 +2927,14 @@ html:is(
 .item-card.back .item-name { text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
 .item-card.shop-deck { border-color: #8a6a3a; color: #fff; background: radial-gradient(120% 90% at 50% 40%, #c79a4f 0%, #6e4f22 100%); }
 .item-card.shop-deck .item-name { text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
-.item-card.small { width: 64px; height: 84px; padding: 13px 3px 4px; border-width: 2px; border-radius: 9px; }
+.item-card.small { width: 64px; height: 84px; min-height: 0; padding: 13px 3px 4px; border-width: 2px; border-radius: 9px; }
 .item-card.small .item-icon { font-size: 1.45rem; }
 .item-card.small .item-name { font-size: .6rem; }
 .item-card.small .item-kind { font-size: .48rem; top: 3px; }
-.item-card.big { width: 150px; height: 210px; }
+.item-card.big { width: 150px; min-height: 210px; }
 .item-card.big .item-icon { font-size: 3.6rem; }
 .item-card.big .item-name { font-size: 1rem; }
-.market-group.shop { align-items: center; }
+.market-group.shop { align-items: stretch; }
 .player-items { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .player-items-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .peek-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
@@ -2831,3 +2960,150 @@ html:is(
 .item-where { position: absolute; left: 6px; right: 6px; bottom: 6px; padding: 1px 4px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: .62rem; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .catalog-grid.items-view .item-card { padding-bottom: 8px; }
 .catalog-grid.items-view .item-card:has(.item-where) .item-price { margin-bottom: 18px; }
+
+/* ---------- Partidas de 3 y 4 jugadores, y equipos */
+.mode-note {
+  margin: 10px 0 0;
+}
+.seats {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.seat {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.seat-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .seat {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+}
+.team-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--team);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.team-score {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.team-score-item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.player-area.teamed {
+  border-top: 4px solid var(--team);
+}
+.partner-note {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.team-result ul {
+  margin: 4px 0 8px;
+  padding-left: 18px;
+}
+/* Con 2 o 3 rivales la columna derecha se compacta */
+.opponents.many .player-area {
+  padding: 8px 10px;
+}
+.opponents.many .player-head {
+  margin-bottom: 6px;
+}
+.opponents.many .player-area .reserved .card {
+  zoom: 0.55;
+}
+.opponents.many .mini {
+  font-size: 0.72rem;
+}
+@media (max-width: 900px) {
+  .opponents.many {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+/* Ayuda del formato del .json */
+.format-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.format-example {
+  margin: 0;
+  padding: 12px 14px;
+  max-height: 340px;
+  overflow: auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 0.8rem/1.45 ui-monospace, Consolas, monospace;
+  white-space: pre;
+}
+.format-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.format-table th,
+.format-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.format-table td:nth-child(2) {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.format-table td.req {
+  color: var(--accent);
+  font-weight: 600;
+}
+.format-tips {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+}
+.format-tips li + li {
+  margin-top: 4px;
+}
+#format-dialog {
+  width: min(860px, calc(100vw - 32px));
+}
+
+/* Crédito del creador en el pie: ícono de GitHub + nombre */
+.creator-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.github-icon {
+  width: 1.15em;
+  height: 1.15em;
+  fill: currentColor;
+  flex: none;
+}

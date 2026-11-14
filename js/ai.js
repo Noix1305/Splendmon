@@ -9,18 +9,20 @@ SM.Ai = (function () {
     return card.points * 3 + card.bonus * 1.2 + (card.evolutions.length ? 0.5 : 0);
   }
 
-  // Lo que falta para pagar una carta, teniendo en cuenta bonificaciones, fichas y Amatistas.
+  // Lo que falta para pagar una carta, teniendo en cuenta bonificaciones, fichas y Amatistas
+  // (en equipos, también las fichas del compañero).
   function shortfall(game, p, card) {
     const bonus = game.bonusOf(p);
+    const have = game.spendableTokens(p);
     const need = {};
     let total = 0;
     C.GEMS.forEach(g => {
-      need[g] = Math.max(0, (card.cost[g] || 0) - bonus[g] - p.tokens[g]);
+      need[g] = Math.max(0, (card.cost[g] || 0) - bonus[g] - have[g]);
       total += need[g];
     });
     const wildCost = card.cost[C.WILD] || 0;
-    const spareWild = Math.max(0, p.tokens[C.WILD] - wildCost);
-    const wildLack = Math.max(0, wildCost - p.tokens[C.WILD]);
+    const spareWild = Math.max(0, have[C.WILD] - wildCost);
+    const wildLack = Math.max(0, wildCost - have[C.WILD]);
     return { need, total: Math.max(0, total - spareWild) + wildLack, wildLack };
   }
 
@@ -71,7 +73,7 @@ SM.Ai = (function () {
       if (src && game.checkReserve(src).ok) return { type: 'reserve', source: src };
     }
 
-    // 3b. Con la mano casi llena, comprar un objeto útil en vez de tomar más pokébolas.
+    // 3b. Con la mano casi llena, comprar un objeto útil en vez de tomar más pokebolas.
     if (game.tokenCount(p) >= C.MAX_TOKENS - 2) {
       const prefer = ['amulet-coin', 'leftovers', 'dowsing', 'rage-candy', 'rare-candy', 'bag', 'coupon', 'nugget', 'bike', 'potion',
         'sun-stone', 'ice-stone', 'fire-stone', 'water-stone', 'leaf-stone', 'thunder-stone', 'moon-stone'];

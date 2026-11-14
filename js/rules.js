@@ -1,4 +1,4 @@
-// Guía de reglas interactiva. Usa las mismas piezas del juego (cartas, pokébolas,
+// Guía de reglas interactiva. Usa las mismas piezas del juego (cartas, pokebolas,
 // mazos) y los valores de js/config.js, así siempre coincide con lo que se juega.
 (function () {
   const C = SM.Config;
@@ -78,14 +78,14 @@
     node.querySelectorAll('[title]').forEach(n => n.removeAttribute('title'));
     tip(node.querySelector('.card-points'), c.points
       ? `<b>Puntos: ${c.points}</b><br>Al capturarlo suma ${c.points} punto(s) para llegar a ${C.TARGET_POINTS}.`
-      : `<b>Puntos: 0</b><br>No suma puntos, pero sirve por la pokébola que genera.`);
+      : `<b>Puntos: 0</b><br>No suma puntos, pero sirve por la pokebola que genera.`);
     tip(node.querySelector('.card-bonus'),
       `<b>Genera ${c.bonus} ${ball(c.gem)} para siempre</b><br>Desde que lo capturas, cada captura te cuesta ${c.bonus} ${ball(c.gem)} menos. También cuenta para evolucionar.`);
     node.querySelectorAll('.evo-thumb').forEach((t, i) => {
       const ev = c.evolutions[i];
       if (ev) tip(t, `<b>Evoluciona a ${ev.name}</b><br>Necesitas ${ev.count} ${ball(ev.gem)} generadas por tus capturas, y que ${ev.name} esté en la mesa o en tus reservas. Es gratis y se hace al final del turno.`);
     });
-    const about = `<b>${c.name}${c.num ? ' #' + c.num : ''}</b><br>${TIER_WORD[c.tier]} · ${c.types.join(' / ') || 'sin tipo'}.<br>El color del borde indica el mazo.`;
+    const about = `<b>${c.name}${c.num ? ' #' + c.num : ''}</b><br>${TIER_WORD[c.tier]} · ${c.types.map(U.typeLabel).join(' / ') || 'sin tipo'}.<br>El color del borde indica el mazo.`;
     tip(node.querySelector(':scope > .card-art'), about);
     tip(node.querySelector('.card-name'), about);
     const costBalls = node.querySelectorAll('.card-cost .gem');
@@ -118,31 +118,31 @@
       title: 'Objetivo', icon: '🏆',
       render(box) {
         box.append(
-          p(`Eres un entrenador que <b>junta pokébolas</b>, <b>captura Pokémon</b> y los <b>hace evolucionar</b>.`),
+          p(`Eres un entrenador que <b>junta pokebolas</b>, <b>captura Pokémon</b> y los <b>hace evolucionar</b>.`),
           callout(`Gana quien tenga <b>${C.TARGET_POINTS} puntos o más</b> cuando se cierra la ronda.`, 'big'),
           p('Los puntos salen de los Pokémon que capturas (el número grande arriba a la izquierda de cada carta).'),
-          p('Cada Pokémon capturado además te <b>genera una pokébola permanente</b>: un descuento para siempre en las próximas capturas. Así, cuanto más capturas, más fácil es capturar.'),
+          p('Cada Pokémon capturado además te <b>genera una pokebola permanente</b>: un descuento para siempre en las próximas capturas. Así, cuanto más capturas, más fácil es capturar.'),
         );
         const leg = exampleLegend();
         if (leg) box.append(row(card(leg), callout(`Los legendarios como <b>${leg.name}</b> dan muchos puntos, pero exigen pagar ${WILD()}.`)));
       },
     },
     {
-      title: 'Las pokébolas', icon: '🔴',
+      title: 'Las pokebolas', icon: '🔴',
       render(box) {
         box.append(p('Son la moneda del juego. Hay cinco tipos normales; cada Pokémon genera la del tipo de su <b>primer tipo</b>:'));
         const groups = U.typeGroups();
         const list = U.el('div', 'rules-balls');
         C.GEMS.forEach(g => {
           const item = U.el('div', 'rules-ball');
-          item.append(U.gemEl(g, null), U.el('b', null, ball(g)), U.el('span', 'muted', (groups[g] || []).join(', ') || '—'));
+          item.append(U.gemEl(g, null), U.el('b', null, ball(g)), U.el('span', 'muted', (groups[g] || []).map(U.typeLabel).join(', ') || '—'));
           list.append(item);
         });
         const wild = U.el('div', 'rules-ball wild');
         wild.append(U.gemEl(C.WILD, null), U.el('b', null, WILD()), U.el('span', null, 'Comodín: sirve como cualquier otra. Solo se consigue reservando.'));
         list.append(wild);
         box.append(list);
-        box.append(callout(`En una partida de 2 hay <b>${C.TOKENS_PER_GEM[2]}</b> de cada tipo normal y <b>${C.WILD_TOKENS}</b> ${WILD()}.`));
+        box.append(callout(`Cuántas hay depende de los jugadores: con 2, <b>${C.TOKENS_PER_GEM[2]}</b> de cada tipo normal y <b>${C.WILD_TOKENS[2]}</b> ${WILD()}; con 3, <b>${C.TOKENS_PER_GEM[3]}</b> y <b>${C.WILD_TOKENS[3]}</b>; con 4, <b>${C.TOKENS_PER_GEM[4]}</b> y <b>${C.WILD_TOKENS[4]}</b>.`));
       },
     },
     {
@@ -154,8 +154,8 @@
           '1': 'Básicos. Baratos, casi no dan puntos.',
           '2': 'Primera evolución. Más caros, más puntos.',
           '3': 'Evolución final. Los que más puntos dan.',
-          rare: `Sin evolución. Dan <b>2</b> pokébolas permanentes y piden 1 ${WILD()}.`,
-          legend: `Los más valiosos. Dan <b>2</b> pokébolas permanentes y piden 1 ${WILD()}.`,
+          rare: `Sin evolución. Dan <b>2</b> pokebolas permanentes y piden 1 ${WILD()}.`,
+          legend: `Los más valiosos. Dan <b>2</b> pokebolas permanentes y piden 1 ${WILD()}.`,
         };
         C.TIERS.forEach(t => {
           const item = U.el('div', 'rules-deck');
@@ -181,10 +181,10 @@
         wrap.append(node);
         const parts = [
           ['.card-points', 'Puntos', 'Lo que suma para llegar a la meta. Si no hay número, da 0.'],
-          ['.card-bonus', 'Pokébola que genera', 'Al capturarlo, te da esta pokébola <b>para siempre</b> (descuento en cada captura).'],
-          ['.evo-thumbs', 'Evolución', 'A quién evoluciona. La pokébola pequeña dice cuántas de ese tipo necesitas <b>generadas por tus capturas</b>.'],
+          ['.card-bonus', 'Pokebola que genera', 'Al capturarlo, te da esta pokebola <b>para siempre</b> (descuento en cada captura).'],
+          ['.evo-thumbs', 'Evolución', 'A quién evoluciona. La pokebola pequeña dice cuántas de ese tipo necesitas <b>generadas por tus capturas</b>.'],
           ['.card-art', 'El Pokémon', 'Haz clic en cualquier carta del juego para ver todos sus datos.'],
-          ['.card-cost', 'Costo', 'Las pokébolas que hay que pagar. En la partida, aquí ves <b>cuántas te faltan</b> (✓ = cubierto).'],
+          ['.card-cost', 'Costo', 'Las pokebolas que hay que pagar. En la partida, aquí ves <b>cuántas te faltan</b> (✓ = cubierto).'],
         ];
         const list = U.el('ol', 'rules-parts');
         parts.forEach(([sel, name, text], i) => {
@@ -211,7 +211,7 @@
         box.append(p('En tu turno haces <b>una sola</b> de estas acciones:'));
         const acts = U.el('div', 'rules-actions');
         [
-          ['A', 'Tomar 3 pokébolas distintas', ''],
+          ['A', 'Tomar 3 pokebolas distintas', ''],
           ['B', 'Tomar 2 iguales', `Solo si quedan <b>${C.MIN_BANK_FOR_DOUBLE} o más</b> de ese tipo.`],
           ['C', 'Reservar una carta', `Te la guardas (máximo ${C.MAX_RESERVED}) y recibes 1 ${WILD()}. Solo Nivel 1, 2 o 3; puede ser la de arriba del mazo, sin verla.`],
           ['D', 'Capturar un Pokémon', 'De la mesa o de tus reservas, pagando su costo.'],
@@ -224,7 +224,7 @@
           acts.append(a);
         });
         box.append(acts);
-        box.append(U.el('h3', null, 'Pruébalo: toma pokébolas'));
+        box.append(U.el('h3', null, 'Pruébalo: toma pokebolas'));
         box.append(takeSimulator());
       },
     },
@@ -232,7 +232,7 @@
       title: 'Capturar y pagar', icon: '💰',
       render(box) {
         box.append(
-          p('Para capturar pagas el costo de la carta. Antes de pagar se descuenta lo que <b>generan tus capturas</b>; lo que falte lo pagas con las pokébolas <b>en mano</b>, y si aún falta, con '
+          p('Para capturar pagas el costo de la carta. Antes de pagar se descuenta lo que <b>generan tus capturas</b>; lo que falte lo pagas con las pokebolas <b>en mano</b>, y si aún falta, con '
             + `${WILD()} (comodín).`),
         );
         const c = examplePay();
@@ -252,7 +252,7 @@
         );
         const ul = U.el('ul', 'rules-list');
         ['su evolución está <b>en la mesa</b> o <b>en tus reservas</b>, y',
-          'tus capturas generan suficientes pokébolas del tipo que pide (las de mano <b>no</b> cuentan).'].forEach(t => { const li = U.el('li'); li.innerHTML = t; ul.append(li); });
+          'tus capturas generan suficientes pokebolas del tipo que pide (las de mano <b>no</b> cuentan).'].forEach(t => { const li = U.el('li'); li.innerHTML = t; ul.append(li); });
         box.append(ul);
         if (!target) return;
         const status = U.el('div', 'rules-callout');
@@ -268,7 +268,7 @@
         };
         box.append(stepper(`${ball(ev.gem)} generadas por tus capturas:`, 0, 0, 6, update, ev.gem), status);
         update(0);
-        box.append(callout('El Pokémon anterior queda debajo: ya no da puntos ni pokébolas, pero cuenta para el desempate.'));
+        box.append(callout('El Pokémon anterior queda debajo: ya no da puntos ni pokebolas, pero cuenta para el desempate.'));
       },
     },
     {
@@ -276,7 +276,7 @@
       render(box) {
         box.append(
           p(`En la mesa hay una <b>tienda</b> con ${C.ITEM_SHOP_SIZE} objetos a la vista. Comprar uno es <b>tu acción del turno</b>.`),
-          p(`Se pagan con pokébolas <b>de tu mano</b> (las generadas por tus capturas no descuentan); lo que falte, con ${WILD()}.`),
+          p(`Se pagan con pokebolas <b>de tu mano</b> (las generadas por tus capturas no descuentan); lo que falte, con ${WILD()}.`),
           p(`Puedes guardar hasta <b>${C.MAX_ITEMS}</b> objetos de un uso. Tu rival solo ve cuántos tienes, no cuáles. Los <b>permanentes</b> se ven y no ocupan espacio.`),
           p('Usar un objeto no gasta tu acción: se usa en el momento que corresponde (al capturar, al tomar, al evolucionar…).'),
           p('Cada objeto existe <b>una sola vez</b>. Mientras alguien lo tiene no aparece en la tienda; cuando lo usa, <b>vuelve al mazo</b> de la tienda.'),
@@ -286,7 +286,7 @@
           const row = U.el('div', 'rules-item');
           row.append(U.itemEl({ uid: 'demo-' + def.id, id: def.id, cost: {} }, { size: 'small', showCost: false }));
           const txt = U.el('div');
-          txt.append(U.el('b', null, `${def.name} · ${def.price} pokébola${def.price > 1 ? 's' : ''}`));
+          txt.append(U.el('b', null, `${def.name} · ${def.price} pokebola${def.price > 1 ? 's' : ''}`));
           txt.append(U.el('div', 'muted', def.text));
           row.append(txt);
           list.append(row);
@@ -298,24 +298,33 @@
       title: 'Fin del turno y de la partida', icon: '🏁',
       render(box) {
         box.append(
-          U.el('h3', null, `Máximo ${C.MAX_TOKENS} pokébolas en mano`),
+          U.el('h3', null, `Máximo ${C.MAX_TOKENS} pokebolas en mano`),
           p(`Si terminas el turno con más de ${C.MAX_TOKENS} (contando ${WILD()}), devuelves las que elijas hasta quedar con ${C.MAX_TOKENS}. Las generadas por capturas no cuentan.`),
           U.el('h3', null, 'Última ronda'),
           p(`Cuando alguien llega a <b>${C.TARGET_POINTS} puntos</b>, se termina la ronda para que todos jueguen la misma cantidad de turnos.`),
           U.el('h3', null, 'Desempate'),
         );
+        const teamsSection = () => {
+          box.append(
+            U.el('h3', null, 'Partida por equipos (2 contra 2)'),
+            p(`Con 4 jugadores se puede jugar por equipos: los jugadores 1 y 3 contra los jugadores 2 y 4, alternando turnos. Cada equipo suma los puntos de sus dos jugadores y la última ronda empieza cuando un equipo llega a <b>${C.TEAM_TARGET_POINTS} puntos</b>.`),
+            p('Al capturar o comprar un objeto puedes pagar con las pokebolas de tu compañero (primero se usan las tuyas). Sus objetos y las pokebolas que generan sus capturas no te sirven.'),
+          );
+        };
         const ol = U.el('ol', 'rules-list');
         ['Más puntos.', 'Si empatan: más evoluciones hechas.', 'Si siguen empatados: menos Pokémon capturados.'].forEach(t => ol.append(U.el('li', null, t)));
-        box.append(ol, callout('¡Listo! Ya sabes jugar. Puedes volver a esta guía desde el botón «Reglas» durante la partida.', 'good'));
+        box.append(ol);
+        teamsSection();
+        box.append(callout('¡Listo! Ya sabes jugar. Puedes volver a esta guía desde el botón «Reglas» durante la partida.', 'good'));
       },
     },
   ];
 
-  // ---------- Simulador: tomar pokébolas (mismas reglas que la partida)
+  // ---------- Simulador: tomar pokebolas (mismas reglas que la partida)
   function takeSimulator() {
     const bank = {};
     C.GEMS.forEach((g, i) => { bank[g] = [4, 4, 2, 4, 3][i] ?? 4; });
-    bank[C.WILD] = C.WILD_TOKENS;
+    bank[C.WILD] = C.WILD_TOKENS[2];
     let sel = [];
     const box = U.el('div', 'rules-sim');
     const stacks = U.el('div', 'bank-stacks rules-bank');
@@ -345,9 +354,9 @@
       });
       const distinct = new Set(sel).size;
       let text; let cls;
-      if (!sel.length) { text = 'Toca las pokébolas para elegir. Las que se ven en blanco y negro no se pueden elegir.'; cls = ''; }
+      if (!sel.length) { text = 'Toca las pokebolas para elegir. Las que se ven en blanco y negro no se pueden elegir.'; cls = ''; }
       else if (sel.length === 2 && distinct === 1) { text = `✓ Dos ${ball(sel[0])} iguales (había ${bank[sel[0]]}, al menos ${C.MIN_BANK_FOR_DOUBLE}).`; cls = 'good'; }
-      else if (sel.length === 3) { text = '✓ Tres pokébolas distintas. ¡Jugada válida!'; cls = 'good'; }
+      else if (sel.length === 3) { text = '✓ Tres pokebolas distintas. ¡Jugada válida!'; cls = 'good'; }
       else { text = `Llevas ${sel.length}. Elige ${3 - sel.length} distinta(s) más` + (sel.length === 1 && bank[sel[0]] >= C.MIN_BANK_FOR_DOUBLE ? `, o toca otra vez la ${ball(sel[0])} para tomar 2 iguales.` : '.'); cls = ''; }
       const low = C.GEMS.find(g => bank[g] < C.MIN_BANK_FOR_DOUBLE);
       if (low && sel.length === 1 && sel[0] === low) text += ` (De ${ball(low)} quedan solo ${bank[low]}: no se pueden tomar 2.)`;
@@ -362,7 +371,7 @@
   // ---------- Simulador: pagar una captura
   function paySimulator(c) {
     const gems = costGems(c);
-    // Ejemplo inicial: una pokébola generada por capturas, casi todo en mano y
+    // Ejemplo inicial: una pokebola generada por capturas, casi todo en mano y
     // 1 Master Ball cubriendo lo último (así se ve el descuento y el comodín).
     const bonus = {}; const hand = {};
     gems.forEach((g, i) => {
@@ -378,7 +387,7 @@
     function render() {
       table.textContent = '';
       const head = U.el('tr');
-      ['Pokébola', 'Cuesta', 'Capturas', 'En mano', 'Pagas'].forEach(h => head.append(U.el('th', null, h)));
+      ['Pokebola', 'Cuesta', 'Capturas', 'En mano', 'Pagas'].forEach(h => head.append(U.el('th', null, h)));
       table.append(head);
       let wildNeeded = c.cost[C.WILD] || 0;
       gems.forEach(g => {
@@ -401,9 +410,9 @@
       result.className = 'rules-callout ' + (ok ? 'good' : 'bad');
       result.innerHTML = ok
         ? `✓ ¡Lo capturas!${wildNeeded ? ` Usas ${wildNeeded} ${WILD()}.` : ''}`
-        : `Te faltan <b>${wildNeeded - wild}</b> pokébola(s). Consigue más o usa ${WILD()}.`;
+        : `Te faltan <b>${wildNeeded - wild}</b> pokebola(s). Consigue más o usa ${WILD()}.`;
     }
-    // Una fila por pokébola: [icono nombre] [capturas −n+] [en mano −n+]
+    // Una fila por pokebola: [icono nombre] [capturas −n+] [en mano −n+]
     const controls = U.el('div', 'rules-controls');
     const ctrlRow = (g, parts) => {
       const name = U.el('div', 'cost-name');
