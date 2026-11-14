@@ -3107,3 +3107,15 @@ html:is(
   fill: currentColor;
   flex: none;
 }
+
+/* Versión del juego en el pie */
+.app-version {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.65rem;
+}
