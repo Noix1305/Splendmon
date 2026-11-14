@@ -2536,6 +2536,20 @@ dialog::backdrop {
   --warn: #ff8a6b;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(80, 20, 140, 0.35);
 }
+/* Charmander: crema cálido, acento naranja fuego y detalles amarillos */
+[data-theme="fire"] {
+  --bg: #fdebd3;
+  --surface: #fff8ee;
+  --surface-2: #ffefc4;
+  --ink: #2b1a0e;
+  --muted: #7a5638;
+  --line: #f1c99a;
+  --accent: #e8661c;
+  --accent-ink: #ffffff;
+  --ok: #2c8a52;
+  --warn: #b83a12;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(232, 102, 28, 0.14);
+}
 /* Bosque: verdes suaves, acento musgo */
 [data-theme="forest"] {
   --bg: #e5ecdf;
@@ -2605,7 +2619,7 @@ dialog::backdrop {
 :root:is([data-theme="dark"], [data-theme="gengar"], [data-theme="ocean"], [data-theme="glass-dark"]) {
   color-scheme: dark;
 }
-:root:is([data-theme="light"], [data-theme="pokedex"], [data-theme="forest"], [data-theme="glass"]) {
+:root:is([data-theme="light"], [data-theme="pokedex"], [data-theme="fire"], [data-theme="forest"], [data-theme="glass"]) {
   color-scheme: light;
 }
 /* El efecto vidrio: desenfoca lo que hay detrás de cada panel */
@@ -2734,6 +2748,7 @@ html:is(
 html:is(
     [data-theme="light"],
     [data-theme="pokedex"],
+    [data-theme="fire"],
     [data-theme="forest"],
     [data-theme="glass"]
   ):is(:not([class*="bg-"]), .bg-metal) {
