@@ -84,7 +84,10 @@ SM.Config = Object.freeze({
     { id: 'fire',       label: 'Charmander', hint: 'naranja y amarillo', num: '004' },
     { id: 'forest',     label: 'Bulbasaur', hint: 'verde',          num: '001' },
     { id: 'ocean',      label: 'Squirtle',  hint: 'azul',           num: '007' },
+    // Las tres aves legendarias.
     { id: 'glass',      label: 'Articuno',  hint: 'cristal claro',  num: '144' },
+    { id: 'zapdos',     label: 'Zapdos',    hint: 'amarillo eléctrico', num: '145' },
+    { id: 'moltres',    label: 'Moltres',   hint: 'fuego oscuro',   num: '146' },
     { id: 'glass-dark', label: 'Lapras',    hint: 'cristal oscuro', num: '131' },
   ],
 
