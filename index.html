@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokesplendor</title>
+  <!-- Icono de la pestaña: pokébola roja (SVG nítido; PNG de respaldo para navegadores sin SVG) -->
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="alternate icon" href="img/balls/poke.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Aplica el fondo guardado en este navegador antes de dibujar la página (sin parpadeo).
+    try {
+      var root = document.documentElement;
+      var theme = localStorage.getItem('splendmon.theme');
+      if (theme && theme !== 'auto' && /^[a-z-]+$/.test(theme)) root.setAttribute('data-theme', theme);
+      var bg = localStorage.getItem('splendmon.background');
+      var style = JSON.parse(localStorage.getItem('splendmon.background.style') || 'null');
+      if (style) {
+        root.className = 'bg-image';
+        for (var k in style) if (/^--bg-/.test(k)) root.style.setProperty(k, style[k]);
+      } else if (bg && /^[a-z-]+$/.test(bg)) {
+        root.className = 'bg-' + bg;
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <section id="setup" class="setup">
+    <h1>Pokesplendor</h1>
+    <p class="lead">Junta pokébolas, captura Pokémon y hazlos evolucionar. Gana quien llegue a 18 puntos al cerrar la ronda.</p>
+    <button id="rules-open" class="secondary rules-cta" type="button">📖 Cómo se juega</button>
+
+    <div class="panel">
+      <h2>1. Pokémon</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="file-input" accept=".json,application/json" hidden>
+        <strong>Elige un archivo .json</strong>
+        <span class="muted">o arrástralo aquí</span>
+      </label>
+      <div class="data-buttons">
+        <button id="use-sample" class="secondary" type="button">Usar los Pokémon de ejemplo</button>
+        <button id="catalog-open" class="secondary" type="button" disabled>Ver Pokémon</button>
+      </div>
+      <div id="data-summary" class="summary"></div>
+    </div>
+
+    <div class="panel">
+      <h2>2. Jugadores</h2>
+      <div class="players-form">
+        <label>Tu nombre <span class="muted small-note">(lo ve tu oponente; tú te ves como «Tú»)</span>
+          <input id="p1-name" value="" placeholder="Jugador 1" maxlength="20" autocomplete="nickname"></label>
+        <label>Jugador 2 <input id="p2-name" value="Máquina" maxlength="20"></label>
+        <label>¿Quién controla al jugador 2?
+          <select id="p2-type">
+            <option value="ai">La máquina</option>
+            <option value="human">Otra persona, en este mismo equipo</option>
+            <option value="online">Otra persona, por internet (código de sala)</option>
+          </select>
+        </label>
+      </div>
+      <label class="test-mode">
+        <input type="checkbox" id="test-mode">
+        <span><strong>Modo prueba:</strong> atrapa cualquier Pokémon cuando quieras desde el botón «Pokémon» de la partida (gratis y sin gastar turno). No funciona en red.</span>
+      </label>
+      <div id="host-status" class="net-status" hidden></div>
+    </div>
+
+    <div class="panel">
+      <h2>¿Te invitaron? Únete a una partida en red</h2>
+      <p class="muted">Pide el código de sala a quien creó la partida. No necesitas cargar Pokémon: se usan las suyas.</p>
+      <div class="players-form">
+        <label>Tu nombre <input id="join-name" value="" placeholder="Jugador 2" maxlength="20" autocomplete="nickname"></label>
+        <label>Código de sala <input id="join-code" maxlength="9" autocomplete="off" spellcheck="false" placeholder="ABC234"></label>
+        <button id="join" class="secondary" type="button">Unirse</button>
+      </div>
+      <div id="join-status" class="net-status" hidden></div>
+    </div>
+
+    <div class="panel">
+      <h2>Tema</h2>
+      <p class="muted">Los colores de la interfaz. Se guarda en este navegador.</p>
+      <div id="theme-picker" class="theme-picker" role="group" aria-label="Elegir tema"></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="with-help">Fondo
+        <span id="bg-file-hint" class="help" hidden>
+          <button type="button" class="help-btn" aria-label="¿No aparecen tus imágenes?" aria-describedby="bg-help-text">?</button>
+          <span id="bg-help-text" class="help-pop" role="tooltip">¿Agregaste o cambiaste imágenes en <code>img/backgrounds</code> y no aparecen? Abre el juego con <b>Jugar.bat</b> (no con doble clic en <code>index.html</code>): así se actualiza la lista de fondos.</span>
+        </span>
+      </h2>
+      <p class="muted">Se guarda en este navegador. Cada jugador ve el fondo que eligió.</p>
+      <div id="bg-picker" class="bg-picker" role="group" aria-label="Elegir fondo"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Tipos y pokébolas</h2>
+      <div id="legend" class="legend"></div>
+    </div>
+
+    <button id="start" class="primary" type="button" disabled>Empezar partida</button>
+  </section>
+
+  <section id="game" class="game" hidden>
+    <header class="topbar">
+      <div id="status"></div>
+      <div class="topbar-actions">
+        <select id="theme-select" aria-label="Tema" title="Tema"></select>
+        <select id="bg-select" aria-label="Fondo" title="Fondo"></select>
+        <button id="rules-game" class="secondary small" type="button">Reglas</button>
+        <button id="catalog-game" class="secondary small" type="button">Pokémon</button>
+        <button id="quit" class="secondary small" type="button">Salir</button>
+      </div>
+    </header>
+    <div id="area-p2" class="player-area"></div>
+    <div class="table">
+      <div id="bank" class="bank"></div>
+      <div id="market" class="market"></div>
+    </div>
+    <div id="prompt" class="prompt" aria-live="polite"></div>
+    <div id="area-p1" class="player-area"></div>
+    <aside class="log">
+      <h3>Registro</h3>
+      <ul id="log"></ul>
+    </aside>
+  </section>
+
+  <dialog id="catalog-dialog" class="catalog-dialog" aria-labelledby="catalog-title">
+    <div class="catalog-head">
+      <h2 id="catalog-title">Pokémon</h2>
+      <span id="catalog-count" class="muted"></span>
+      <button id="catalog-close" class="secondary small" type="button">Cerrar</button>
+    </div>
+    <div class="catalog-filters">
+      <input id="catalog-search" type="search" placeholder="Buscar por nombre, número o tipo" autocomplete="off" aria-label="Buscar Pokémon">
+      <div id="catalog-tiers" class="catalog-tiers" role="group" aria-label="Filtrar por nivel"></div>
+    </div>
+    <div id="catalog-grid" class="catalog-grid"></div>
+  </dialog>
+  <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"></dialog>
+  <dialog id="card-dialog"><div id="card-dialog-body"></div></dialog>
+  <div id="game-over" class="overlay" hidden></div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="data/sample-monsters.js"></script>
+  <!-- Lista de fondos de imagen: la genera tools/actualizar-fondos.bat -->
+  <script src="img/backgrounds/fondos.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/cards.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/rules.js"></script>
+</body>
+</html>

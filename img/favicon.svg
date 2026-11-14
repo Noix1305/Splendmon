@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Pokébola roja: icono de la pestaña del navegador -->
+  <defs>
+    <clipPath id="ball"><circle cx="32" cy="32" r="29"/></clipPath>
+    <radialGradient id="shine" cx="35%" cy="28%" r="45%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#ball)">
+    <rect x="0" y="0" width="64" height="32" fill="#e3262f"/>
+    <rect x="0" y="32" width="64" height="32" fill="#f4f4f4"/>
+    <rect x="0" y="28.5" width="64" height="7" fill="#1b1b1f"/>
+    <circle cx="32" cy="32" r="29" fill="url(#shine)"/>
+  </g>
+  <circle cx="32" cy="32" r="29" fill="none" stroke="#1b1b1f" stroke-width="4"/>
+  <circle cx="32" cy="32" r="10" fill="#1b1b1f"/>
+  <circle cx="32" cy="32" r="6.5" fill="#fafafa"/>
+  <circle cx="32" cy="32" r="3.5" fill="none" stroke="#c9c9c9" stroke-width="1.5"/>
+</svg>

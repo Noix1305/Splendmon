@@ -1,0 +1,1007 @@
+{
+  "monsters": [
+    {
+      "id": 1,
+      "num": "001",
+      "name": "Brotin",
+      "img": "",
+      "type": ["Grass"],
+      "height": "0.40 m",
+      "weight": "5.0 kg",
+      "weaknesses": ["Fire", "Ice", "Flying", "Bug"],
+      "next_evolution": [
+        {
+          "num": "002",
+          "name": "Ramalón"
+        },
+        {
+          "num": "003",
+          "name": "Bosquerón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 2,
+      "num": "002",
+      "name": "Ramalón",
+      "img": "",
+      "type": ["Grass"],
+      "height": "1.00 m",
+      "weight": "15.0 kg",
+      "weaknesses": ["Fire", "Ice", "Flying", "Bug"],
+      "next_evolution": [
+        {
+          "num": "003",
+          "name": "Bosquerón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 3,
+      "num": "003",
+      "name": "Bosquerón",
+      "img": "",
+      "type": ["Grass", "Ground"],
+      "height": "2.10 m",
+      "weight": "120.0 kg",
+      "weaknesses": ["Fire", "Ice", "Flying", "Bug"],
+      "legendary": false
+    },
+    {
+      "id": 4,
+      "num": "004",
+      "name": "Chispín",
+      "img": "",
+      "type": ["Fire"],
+      "height": "0.50 m",
+      "weight": "7.5 kg",
+      "weaknesses": ["Water", "Ground", "Rock"],
+      "next_evolution": [
+        {
+          "num": "005",
+          "name": "Fogarín"
+        },
+        {
+          "num": "006",
+          "name": "Volcanor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 5,
+      "num": "005",
+      "name": "Fogarín",
+      "img": "",
+      "type": ["Fire"],
+      "height": "1.10 m",
+      "weight": "22.0 kg",
+      "weaknesses": ["Water", "Ground", "Rock"],
+      "next_evolution": [
+        {
+          "num": "006",
+          "name": "Volcanor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 6,
+      "num": "006",
+      "name": "Volcanor",
+      "img": "",
+      "type": ["Fire", "Rock"],
+      "height": "1.90 m",
+      "weight": "150.0 kg",
+      "weaknesses": ["Water", "Ground", "Rock"],
+      "legendary": false
+    },
+    {
+      "id": 7,
+      "num": "007",
+      "name": "Gotita",
+      "img": "",
+      "type": ["Water"],
+      "height": "0.40 m",
+      "weight": "6.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "next_evolution": [
+        {
+          "num": "008",
+          "name": "Ondino"
+        },
+        {
+          "num": "009",
+          "name": "Maremor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 8,
+      "num": "008",
+      "name": "Ondino",
+      "img": "",
+      "type": ["Water"],
+      "height": "1.00 m",
+      "weight": "25.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "next_evolution": [
+        {
+          "num": "009",
+          "name": "Maremor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 9,
+      "num": "009",
+      "name": "Maremor",
+      "img": "",
+      "type": ["Water"],
+      "height": "1.80 m",
+      "weight": "95.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "legendary": false
+    },
+    {
+      "id": 10,
+      "num": "010",
+      "name": "Zumbo",
+      "img": "",
+      "type": ["Electric"],
+      "height": "0.30 m",
+      "weight": "3.0 kg",
+      "weaknesses": ["Ground"],
+      "next_evolution": [
+        {
+          "num": "011",
+          "name": "Voltizumb"
+        },
+        {
+          "num": "012",
+          "name": "Tormentón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 11,
+      "num": "011",
+      "name": "Voltizumb",
+      "img": "",
+      "type": ["Electric", "Bug"],
+      "height": "0.80 m",
+      "weight": "12.0 kg",
+      "weaknesses": ["Ground"],
+      "next_evolution": [
+        {
+          "num": "012",
+          "name": "Tormentón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 12,
+      "num": "012",
+      "name": "Tormentón",
+      "img": "",
+      "type": ["Electric", "Flying"],
+      "height": "1.60 m",
+      "weight": "60.0 kg",
+      "weaknesses": ["Ground"],
+      "legendary": false
+    },
+    {
+      "id": 13,
+      "num": "013",
+      "name": "Piedrín",
+      "img": "",
+      "type": ["Rock"],
+      "height": "0.40 m",
+      "weight": "20.0 kg",
+      "weaknesses": ["Water", "Grass", "Fighting", "Ground"],
+      "next_evolution": [
+        {
+          "num": "014",
+          "name": "Rocardo"
+        },
+        {
+          "num": "015",
+          "name": "Montañón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 14,
+      "num": "014",
+      "name": "Rocardo",
+      "img": "",
+      "type": ["Rock", "Ground"],
+      "height": "1.00 m",
+      "weight": "105.0 kg",
+      "weaknesses": ["Water", "Grass", "Fighting", "Ground"],
+      "next_evolution": [
+        {
+          "num": "015",
+          "name": "Montañón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 15,
+      "num": "015",
+      "name": "Montañón",
+      "img": "",
+      "type": ["Rock", "Ground"],
+      "height": "1.40 m",
+      "weight": "300.0 kg",
+      "weaknesses": ["Water", "Grass", "Fighting", "Ground"],
+      "legendary": false
+    },
+    {
+      "id": 16,
+      "num": "016",
+      "name": "Polillín",
+      "img": "",
+      "type": ["Bug"],
+      "height": "0.30 m",
+      "weight": "2.9 kg",
+      "weaknesses": ["Fire", "Flying", "Rock"],
+      "next_evolution": [
+        {
+          "num": "017",
+          "name": "Polivelo"
+        },
+        {
+          "num": "018",
+          "name": "Mariposón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 17,
+      "num": "017",
+      "name": "Polivelo",
+      "img": "",
+      "type": ["Bug"],
+      "height": "0.70 m",
+      "weight": "9.9 kg",
+      "weaknesses": ["Fire", "Flying", "Rock"],
+      "next_evolution": [
+        {
+          "num": "018",
+          "name": "Mariposón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 18,
+      "num": "018",
+      "name": "Mariposón",
+      "img": "",
+      "type": ["Bug", "Flying"],
+      "height": "1.20 m",
+      "weight": "32.0 kg",
+      "weaknesses": ["Fire", "Flying", "Rock"],
+      "legendary": false
+    },
+    {
+      "id": 19,
+      "num": "019",
+      "name": "Sombrín",
+      "img": "",
+      "type": ["Ghost"],
+      "height": "1.30 m",
+      "weight": "0.1 kg",
+      "weaknesses": ["Ghost", "Dark"],
+      "next_evolution": [
+        {
+          "num": "020",
+          "name": "Umbrado"
+        },
+        {
+          "num": "021",
+          "name": "Nocturno"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 20,
+      "num": "020",
+      "name": "Umbrado",
+      "img": "",
+      "type": ["Ghost"],
+      "height": "1.60 m",
+      "weight": "0.1 kg",
+      "weaknesses": ["Ghost", "Dark"],
+      "next_evolution": [
+        {
+          "num": "021",
+          "name": "Nocturno"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 21,
+      "num": "021",
+      "name": "Nocturno",
+      "img": "",
+      "type": ["Ghost", "Dark"],
+      "height": "1.50 m",
+      "weight": "40.5 kg",
+      "weaknesses": ["Ghost", "Dark"],
+      "legendary": false
+    },
+    {
+      "id": 22,
+      "num": "022",
+      "name": "Mentín",
+      "img": "",
+      "type": ["Psychic"],
+      "height": "0.90 m",
+      "weight": "19.5 kg",
+      "weaknesses": ["Bug", "Ghost", "Dark"],
+      "next_evolution": [
+        {
+          "num": "023",
+          "name": "Psiquino"
+        },
+        {
+          "num": "024",
+          "name": "Oraculón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 23,
+      "num": "023",
+      "name": "Psiquino",
+      "img": "",
+      "type": ["Psychic"],
+      "height": "1.30 m",
+      "weight": "56.5 kg",
+      "weaknesses": ["Bug", "Ghost", "Dark"],
+      "next_evolution": [
+        {
+          "num": "024",
+          "name": "Oraculón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 24,
+      "num": "024",
+      "name": "Oraculón",
+      "img": "",
+      "type": ["Psychic"],
+      "height": "1.50 m",
+      "weight": "48.0 kg",
+      "weaknesses": ["Bug", "Ghost", "Dark"],
+      "legendary": false
+    },
+    {
+      "id": 25,
+      "num": "025",
+      "name": "Puñín",
+      "img": "",
+      "type": ["Fighting"],
+      "height": "0.80 m",
+      "weight": "19.5 kg",
+      "weaknesses": ["Flying", "Psychic", "Fairy"],
+      "next_evolution": [
+        {
+          "num": "026",
+          "name": "Golpeón"
+        },
+        {
+          "num": "027",
+          "name": "Titanazo"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 26,
+      "num": "026",
+      "name": "Golpeón",
+      "img": "",
+      "type": ["Fighting"],
+      "height": "1.50 m",
+      "weight": "70.5 kg",
+      "weaknesses": ["Flying", "Psychic", "Fairy"],
+      "next_evolution": [
+        {
+          "num": "027",
+          "name": "Titanazo"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 27,
+      "num": "027",
+      "name": "Titanazo",
+      "img": "",
+      "type": ["Fighting"],
+      "height": "1.60 m",
+      "weight": "130.0 kg",
+      "weaknesses": ["Flying", "Psychic", "Fairy"],
+      "legendary": false
+    },
+    {
+      "id": 28,
+      "num": "028",
+      "name": "Escamín",
+      "img": "",
+      "type": ["Dragon"],
+      "height": "1.80 m",
+      "weight": "3.3 kg",
+      "weaknesses": ["Ice", "Dragon", "Fairy"],
+      "next_evolution": [
+        {
+          "num": "029",
+          "name": "Draconel"
+        },
+        {
+          "num": "030",
+          "name": "Dragoral"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 29,
+      "num": "029",
+      "name": "Draconel",
+      "img": "",
+      "type": ["Dragon"],
+      "height": "4.00 m",
+      "weight": "16.5 kg",
+      "weaknesses": ["Ice", "Dragon", "Fairy"],
+      "next_evolution": [
+        {
+          "num": "030",
+          "name": "Dragoral"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 30,
+      "num": "030",
+      "name": "Dragoral",
+      "img": "",
+      "type": ["Dragon", "Flying"],
+      "height": "2.20 m",
+      "weight": "210.0 kg",
+      "weaknesses": ["Ice", "Dragon", "Fairy"],
+      "legendary": false
+    },
+    {
+      "id": 31,
+      "num": "031",
+      "name": "Escarchín",
+      "img": "",
+      "type": ["Ice"],
+      "height": "0.50 m",
+      "weight": "8.0 kg",
+      "weaknesses": ["Fire", "Fighting", "Rock", "Steel"],
+      "next_evolution": [
+        {
+          "num": "032",
+          "name": "Glaciel"
+        },
+        {
+          "num": "033",
+          "name": "Ventisquero"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 32,
+      "num": "032",
+      "name": "Glaciel",
+      "img": "",
+      "type": ["Ice"],
+      "height": "1.20 m",
+      "weight": "40.0 kg",
+      "weaknesses": ["Fire", "Fighting", "Rock", "Steel"],
+      "next_evolution": [
+        {
+          "num": "033",
+          "name": "Ventisquero"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 33,
+      "num": "033",
+      "name": "Ventisquero",
+      "img": "",
+      "type": ["Ice", "Flying"],
+      "height": "1.70 m",
+      "weight": "85.0 kg",
+      "weaknesses": ["Fire", "Fighting", "Rock", "Steel"],
+      "legendary": false
+    },
+    {
+      "id": 34,
+      "num": "034",
+      "name": "Lodín",
+      "img": "",
+      "type": ["Poison"],
+      "height": "0.90 m",
+      "weight": "30.0 kg",
+      "weaknesses": ["Ground", "Psychic"],
+      "next_evolution": [
+        {
+          "num": "035",
+          "name": "Fangoso"
+        },
+        {
+          "num": "036",
+          "name": "Pantanor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 35,
+      "num": "035",
+      "name": "Fangoso",
+      "img": "",
+      "type": ["Poison"],
+      "height": "1.20 m",
+      "weight": "50.0 kg",
+      "weaknesses": ["Ground", "Psychic"],
+      "next_evolution": [
+        {
+          "num": "036",
+          "name": "Pantanor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 36,
+      "num": "036",
+      "name": "Pantanor",
+      "img": "",
+      "type": ["Poison", "Water"],
+      "height": "1.60 m",
+      "weight": "80.0 kg",
+      "weaknesses": ["Ground", "Psychic"],
+      "legendary": false
+    },
+    {
+      "id": 37,
+      "num": "037",
+      "name": "Topín",
+      "img": "",
+      "type": ["Normal", "Ground"],
+      "height": "0.20 m",
+      "weight": "0.8 kg",
+      "weaknesses": ["Fighting"],
+      "next_evolution": [
+        {
+          "num": "038",
+          "name": "Excavor"
+        },
+        {
+          "num": "039",
+          "name": "Terremón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 38,
+      "num": "038",
+      "name": "Excavor",
+      "img": "",
+      "type": ["Normal", "Ground"],
+      "height": "0.70 m",
+      "weight": "33.3 kg",
+      "weaknesses": ["Fighting"],
+      "next_evolution": [
+        {
+          "num": "039",
+          "name": "Terremón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 39,
+      "num": "039",
+      "name": "Terremón",
+      "img": "",
+      "type": ["Ground"],
+      "height": "1.30 m",
+      "weight": "95.0 kg",
+      "weaknesses": ["Water", "Grass", "Ice"],
+      "legendary": false
+    },
+    {
+      "id": 40,
+      "num": "040",
+      "name": "Gaviotín",
+      "img": "",
+      "type": ["Water", "Flying"],
+      "height": "0.60 m",
+      "weight": "9.5 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "next_evolution": [
+        {
+          "num": "041",
+          "name": "Gaviolón"
+        },
+        {
+          "num": "042",
+          "name": "Albatrón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 41,
+      "num": "041",
+      "name": "Gaviolón",
+      "img": "",
+      "type": ["Water", "Flying"],
+      "height": "1.20 m",
+      "weight": "28.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "next_evolution": [
+        {
+          "num": "042",
+          "name": "Albatrón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 42,
+      "num": "042",
+      "name": "Albatrón",
+      "img": "",
+      "type": ["Water", "Flying"],
+      "height": "1.70 m",
+      "weight": "55.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "legendary": false
+    },
+    {
+      "id": 43,
+      "num": "043",
+      "name": "Brasita",
+      "img": "",
+      "type": ["Fire"],
+      "height": "0.60 m",
+      "weight": "8.5 kg",
+      "weaknesses": ["Water", "Ground", "Rock"],
+      "next_evolution": [
+        {
+          "num": "044",
+          "name": "Brasero"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 44,
+      "num": "044",
+      "name": "Brasero",
+      "img": "",
+      "type": ["Fire"],
+      "height": "1.00 m",
+      "weight": "30.0 kg",
+      "weaknesses": ["Water", "Ground", "Rock"],
+      "legendary": false
+    },
+    {
+      "id": 45,
+      "num": "045",
+      "name": "Medusín",
+      "img": "",
+      "type": ["Water", "Poison"],
+      "height": "0.90 m",
+      "weight": "45.5 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "next_evolution": [
+        {
+          "num": "046",
+          "name": "Medusona"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 46,
+      "num": "046",
+      "name": "Medusona",
+      "img": "",
+      "type": ["Water", "Poison"],
+      "height": "1.60 m",
+      "weight": "55.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "legendary": false
+    },
+    {
+      "id": 47,
+      "num": "047",
+      "name": "Semillín",
+      "img": "",
+      "type": ["Grass"],
+      "height": "0.30 m",
+      "weight": "2.0 kg",
+      "weaknesses": ["Fire", "Ice", "Flying", "Bug"],
+      "next_evolution": [
+        {
+          "num": "048",
+          "name": "Girasolón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 48,
+      "num": "048",
+      "name": "Girasolón",
+      "img": "",
+      "type": ["Grass"],
+      "height": "0.80 m",
+      "weight": "8.5 kg",
+      "weaknesses": ["Fire", "Ice", "Flying", "Bug"],
+      "legendary": false
+    },
+    {
+      "id": 49,
+      "num": "049",
+      "name": "Roedín",
+      "img": "",
+      "type": ["Normal"],
+      "height": "0.30 m",
+      "weight": "3.5 kg",
+      "weaknesses": ["Fighting"],
+      "next_evolution": [
+        {
+          "num": "050",
+          "name": "Roedorón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 50,
+      "num": "050",
+      "name": "Roedorón",
+      "img": "",
+      "type": ["Normal"],
+      "height": "0.70 m",
+      "weight": "18.5 kg",
+      "weaknesses": ["Fighting"],
+      "legendary": false
+    },
+    {
+      "id": 51,
+      "num": "051",
+      "name": "Imancito",
+      "img": "",
+      "type": ["Electric", "Steel"],
+      "height": "0.30 m",
+      "weight": "6.0 kg",
+      "weaknesses": ["Ground"],
+      "next_evolution": [
+        {
+          "num": "052",
+          "name": "Imantor"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 52,
+      "num": "052",
+      "name": "Imantor",
+      "img": "",
+      "type": ["Electric", "Steel"],
+      "height": "1.00 m",
+      "weight": "60.0 kg",
+      "weaknesses": ["Ground"],
+      "legendary": false
+    },
+    {
+      "id": 53,
+      "num": "053",
+      "name": "Hadina",
+      "img": "",
+      "type": ["Fairy"],
+      "height": "0.60 m",
+      "weight": "7.5 kg",
+      "weaknesses": ["Poison", "Steel"],
+      "next_evolution": [
+        {
+          "num": "054",
+          "name": "Hadeleste"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 54,
+      "num": "054",
+      "name": "Hadeleste",
+      "img": "",
+      "type": ["Fairy"],
+      "height": "1.30 m",
+      "weight": "40.0 kg",
+      "weaknesses": ["Poison", "Steel"],
+      "legendary": false
+    },
+    {
+      "id": 55,
+      "num": "055",
+      "name": "Murcielín",
+      "img": "",
+      "type": ["Dark", "Flying"],
+      "height": "0.80 m",
+      "weight": "7.5 kg",
+      "weaknesses": ["Fighting", "Bug", "Fairy"],
+      "next_evolution": [
+        {
+          "num": "056",
+          "name": "Murcielón"
+        }
+      ],
+      "legendary": false
+    },
+    {
+      "id": 56,
+      "num": "056",
+      "name": "Murcielón",
+      "img": "",
+      "type": ["Dark", "Flying"],
+      "height": "1.60 m",
+      "weight": "55.0 kg",
+      "weaknesses": ["Fighting", "Bug", "Fairy"],
+      "legendary": false
+    },
+    {
+      "id": 57,
+      "num": "057",
+      "name": "Ballenón",
+      "img": "",
+      "type": ["Water", "Ice"],
+      "height": "2.50 m",
+      "weight": "220.0 kg",
+      "weaknesses": ["Electric", "Grass"],
+      "legendary": false
+    },
+    {
+      "id": 58,
+      "num": "058",
+      "name": "Dormilón",
+      "img": "",
+      "type": ["Normal"],
+      "height": "2.10 m",
+      "weight": "460.0 kg",
+      "weaknesses": ["Fighting"],
+      "legendary": false
+    },
+    {
+      "id": 59,
+      "num": "059",
+      "name": "Cornudo",
+      "img": "",
+      "type": ["Ground"],
+      "height": "1.40 m",
+      "weight": "88.4 kg",
+      "weaknesses": ["Water", "Grass", "Ice"],
+      "legendary": false
+    },
+    {
+      "id": 60,
+      "num": "060",
+      "name": "Pinzador",
+      "img": "",
+      "type": ["Bug"],
+      "height": "1.50 m",
+      "weight": "55.0 kg",
+      "weaknesses": ["Fire", "Flying", "Rock"],
+      "legendary": false
+    },
+    {
+      "id": 61,
+      "num": "061",
+      "name": "Fosilón",
+      "img": "",
+      "type": ["Rock", "Flying"],
+      "height": "1.80 m",
+      "weight": "59.0 kg",
+      "weaknesses": ["Water", "Grass", "Fighting", "Ground"],
+      "legendary": false
+    },
+    {
+      "id": 62,
+      "num": "062",
+      "name": "Espejín",
+      "img": "",
+      "type": ["Psychic"],
+      "height": "1.30 m",
+      "weight": "54.5 kg",
+      "weaknesses": ["Bug", "Ghost", "Dark"],
+      "legendary": false
+    },
+    {
+      "id": 63,
+      "num": "063",
+      "name": "Fénixar",
+      "img": "",
+      "type": ["Fire", "Flying"],
+      "height": "2.00 m",
+      "weight": "60.0 kg",
+      "weaknesses": ["Water", "Ground", "Rock"],
+      "legendary": true
+    },
+    {
+      "id": 64,
+      "num": "064",
+      "name": "Rayocóndor",
+      "img": "",
+      "type": ["Electric", "Flying"],
+      "height": "1.60 m",
+      "weight": "52.6 kg",
+      "weaknesses": ["Ground"],
+      "legendary": true
+    },
+    {
+      "id": 65,
+      "num": "065",
+      "name": "Hieloave",
+      "img": "",
+      "type": ["Ice", "Flying"],
+      "height": "1.70 m",
+      "weight": "55.4 kg",
+      "weaknesses": ["Fire", "Fighting", "Rock", "Steel"],
+      "legendary": true
+    },
+    {
+      "id": 66,
+      "num": "066",
+      "name": "Mentegón",
+      "img": "",
+      "type": ["Psychic"],
+      "height": "2.00 m",
+      "weight": "122.0 kg",
+      "weaknesses": ["Bug", "Ghost", "Dark"],
+      "legendary": true
+    },
+    {
+      "id": 67,
+      "num": "067",
+      "name": "Origenia",
+      "img": "",
+      "type": ["Psychic"],
+      "height": "0.40 m",
+      "weight": "4.0 kg",
+      "weaknesses": ["Bug", "Ghost", "Dark"],
+      "legendary": true
+    }
+  ]
+}
