@@ -537,7 +537,7 @@
       box.append(row);
     }
     const online = Array.from({ length: count - 1 }, (_, k) => seatPref(k + 1)).some(s => s.type === 'online');
-    setStart({ text: online ? 'Crear sala' : 'Empezar partida' });
+    setStart({ text: online ? '▶ Crear sala' : '▶ Empezar partida' });
     lockSetup(!!state.role);
   }
 
@@ -1285,9 +1285,31 @@
     }
   }
 
+  // Tamaño de las cartas de la mesa según el ancho disponible: en cada nivel siempre caben
+  // el mazo y sus 4 cartas en una fila (en notebook, monitor grande, tablet o celular).
+  const CARD_W = 132;            // ancho de una carta a tamaño normal (css .card)
+  const ROW_GAP = 8;             // espacio entre cartas (css .market-group)
+  const ZOOM_MIN = 0.35;
+  const ZOOM_MAX = 1.25;
+  function fitMarket() {
+    const box = $('#market');
+    if (!box || !state.game) return;
+    const perRow = 1 + Math.max(...C.RESERVABLE_TIERS.map(t => C.MARKET_SIZE[t]));
+    const w = box.clientWidth;
+    if (!w) return;
+    const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, (w - (perRow - 1) * ROW_GAP - 2) / (perRow * CARD_W)));
+    box.style.setProperty('--card-zoom', zoom.toFixed(3));
+  }
+  if (window.ResizeObserver) {
+    document.addEventListener('DOMContentLoaded', () => new ResizeObserver(fitMarket).observe($('#market')));
+  } else {
+    window.addEventListener('resize', fitMarket);
+  }
+
   function renderMarket() {
     const g = state.game;
     const box = $('#market');
+    fitMarket();
     box.textContent = '';
     [['legend', 'rare'], ['3'], ['2'], ['1']].forEach(tiers => {
       const row = el('div', 'market-row');

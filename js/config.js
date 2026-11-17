@@ -4,7 +4,7 @@ window.SM = window.SM || {};
 SM.Config = Object.freeze({
   // Versión del juego: se muestra en el pie de página. Súbela al publicar cambios
   // (1.0.1 arreglos, 1.1.0 algo nuevo, 2.0.0 cambios grandes).
-  VERSION: '1.0.3',
+  VERSION: '1.0.4',
 
   // Estadísticas con GoatCounter (gratis, sin cookies; ver js/stats.js). Pon aquí el código
   // de tu cuenta: si tu panel es https://pokesplendor.goatcounter.com, el código es 'pokesplendor'.

@@ -1,5 +1,14 @@
 # Cambios
 
+## 1.0.4
+
+Ajustes para que el juego se vea bien en cualquier pantalla.
+
+- **Mesa adaptable.** Las cartas se agrandan o achican según el ancho disponible, así cada nivel muestra siempre su mazo y sus 4 cartas en una sola fila: en notebook, monitor grande, tablet o celular. Antes, en notebooks quedaban 3 por fila.
+- **Columnas laterales flexibles.** Los paneles de jugadores y el registro se angostan en pantallas medianas para dejarle más espacio a la mesa.
+- **Celulares.** La barra superior de la partida y la fila de pokebolas se acomodan al ancho: ya no se sale nada de la pantalla.
+- **Botón «▶ Empezar partida»** centrado y más grande, debajo de los paneles; en celulares ocupa todo el ancho.
+
 ## 1.0.3
 
 Mejoras para quien juega.
