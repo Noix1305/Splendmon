@@ -4,7 +4,7 @@ Juego de cartas para 2 a 4 jugadores, solos o por equipos: se juntan pokebolas, 
 
 Se juega en el navegador: **https://noix1305.github.io/Splendmon/**
 
-Versión actual: **1.0.3** (ver [CHANGELOG.md](CHANGELOG.md)).
+Versión actual: **1.0.4** (ver [CHANGELOG.md](CHANGELOG.md)).
 
 ## Cómo jugar
 
@@ -13,9 +13,11 @@ Abre la página publicada, o en tu equipo abre `Jugar.bat` (o `index.html` con d
 1. Al abrir se cargan solos los 151 Pokémon de ejemplo. Si quieres otros, elige o arrastra un `.json` (el botón **📄 ¿Cómo debe ser el .json?** explica el formato y trae un ejemplo para descargar).
 2. Elige cuántos jugadores (2 a 4) y el modo: **Todos contra todos** o **Equipos: 2 contra 2** (solo con 4).
 3. Para cada jugador, elige quién lo controla: la máquina, otra persona en el mismo equipo u otra persona por internet. Se pueden mezclar.
-4. **Empezar partida** (dice **Crear sala** si alguien juega por internet).
+4. **▶ Empezar partida**, el botón grande debajo de los paneles (dice **Crear sala** si alguien juega por internet).
 
-Arriba están también **📖 Cómo se juega** (guía interactiva de reglas), **🎨 Estilo** (tema y fondo, se guardan en cada navegador) y **🔗 Unirse a una sala**.
+La pantalla se adapta a notebooks, monitores grandes, tablets y celulares: las cartas de la mesa cambian de tamaño para que cada nivel muestre siempre sus 4 cartas en una fila.
+
+Arriba están **📖 Cómo se juega** (guía interactiva de reglas), **🎨 Estilo** (tema y fondo, se guardan en cada navegador) y **🔗 Unirse a una sala**.
 
 Las pokebolas cambian con el número de jugadores: 4, 5 o 7 de cada tipo y 5, 5 o 7 Master Ball (con 2, 3 o 4 jugadores). Se ajusta en `TOKENS_PER_GEM` y `WILD_TOKENS` de `js/config.js`.
 

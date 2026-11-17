@@ -3167,3 +3167,100 @@ html:is(
   font-weight: 400;
   color: var(--muted);
 }
+
+/* ---------- Responsivo: cartas de la mesa escaladas al ancho disponible.
+   js/ui.js (fitMarket) calcula --card-zoom para que el mazo y las 4 cartas de cada
+   nivel quepan siempre en una fila, en cualquier pantalla. */
+#market .card {
+  zoom: var(--card-zoom, 1);
+}
+#market .market-row {
+  gap: 8px 16px;
+}
+
+/* Barra superior de la partida: en pantallas angostas los botones bajan de línea. */
+.topbar {
+  flex-wrap: wrap;
+}
+.topbar-actions {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.topbar-actions select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Columnas laterales: se angostan en pantallas medianas para dejarle espacio a la mesa. */
+.game {
+  grid-template-columns: clamp(200px, 15vw, 260px) minmax(0, 1fr) clamp(200px, 15vw, 260px) clamp(170px, 12vw, 230px);
+}
+@media (max-width: 1280px) {
+  .game {
+    grid-template-columns: clamp(190px, 17vw, 230px) minmax(0, 1fr) clamp(190px, 17vw, 230px);
+  }
+}
+@media (max-width: 900px) {
+  .game {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .topbar-actions {
+    justify-content: flex-start;
+  }
+  .topbar-actions select {
+    flex: 1 1 140px;
+  }
+}
+/* Las cartas de la tienda siguen el mismo tamaño que las de la mesa (un poco menos en
+   pantallas grandes, que ya son más chicas que una carta). */
+#market .item-card {
+  zoom: min(1, var(--card-zoom, 1));
+}
+/* En la mesa no hay ancho mínimo: los contenedores se ajustan a la pantalla. */
+#market,
+#market .market-row,
+#market .market-group {
+  min-width: 0;
+}
+
+/* Botón principal de la pantalla inicial: centrado, grande y adaptable */
+.start-wrap {
+  display: flex;
+  justify-content: center;
+}
+.start-big {
+  min-width: min(100%, 320px);
+  padding: clamp(0.75rem, 1.6vw, 1rem) clamp(1.5rem, 4vw, 3rem);
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-weight: 800;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.start-big:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+@media (max-width: 640px) {
+  .start-big {
+    width: 100%;
+  }
+}
+/* Pokebolas disponibles: en celulares la fila se reparte en el ancho que haya. */
+@media (max-width: 640px) {
+  .bank-stacks {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 4px;
+  }
+  .bank-token {
+    min-width: 0;
+    padding: 4px 2px;
+  }
+  .bank-token .gem {
+    --size: 30px;
+  }
+}
