@@ -3227,15 +3227,18 @@ html:is(
   min-width: 0;
 }
 
-/* Botón principal de la pantalla inicial: centrado, grande y adaptable */
+/* Botón principal de la pantalla inicial: siempre centrado y del mismo tamaño grande,
+   en cualquier pantalla (en celulares angostos solo se limita al ancho disponible). */
 .start-wrap {
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 .start-big {
-  min-width: min(100%, 320px);
-  padding: clamp(0.75rem, 1.6vw, 1rem) clamp(1.5rem, 4vw, 3rem);
-  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  width: 360px;
+  max-width: 100%;
+  padding: 1rem 2rem;
+  font-size: 1.4rem;
   font-weight: 800;
   border-radius: 14px;
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
@@ -3244,11 +3247,6 @@ html:is(
 .start-big:not(:disabled):hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent);
-}
-@media (max-width: 640px) {
-  .start-big {
-    width: 100%;
-  }
 }
 /* Pokebolas disponibles: en celulares la fila se reparte en el ancho que haya. */
 @media (max-width: 640px) {
